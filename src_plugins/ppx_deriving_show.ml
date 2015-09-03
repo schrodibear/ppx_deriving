@@ -164,24 +164,29 @@ let str_of_type ~options ~path group_def ({ ptype_loc = loc } as type_decl) =
       [%expr fun fmt -> [%e expr_of_typ group_def manifest]]
     | Ptype_variant constrs, _ ->
       let cases =
-        constrs |> List.map (fun { pcd_name = { txt = name' }; pcd_args } ->
-          let constr_name = Ppx_deriving.expand_path ~path name' in
-          let args = List.mapi (fun i typ -> app (expr_of_typ group_def typ) [evar (argn i)]) pcd_args in
-          let result =
-            match args with
-            | []   -> [%expr Format.pp_print_string fmt [%e str constr_name]]
-            | [arg] ->
-              [%expr
-                Format.fprintf fmt [%e str ("(@[<hov2>" ^  constr_name ^ "@ ")];
-                [%e arg];
-                Format.fprintf fmt "@])"]
-            | args ->
-              [%expr Format.fprintf fmt [%e str ("@[<hov2>" ^  constr_name ^ " (@,")];
-              [%e args |> Ppx_deriving.(fold_exprs
-                    (seq_reduce ~sep:[%expr Format.fprintf fmt ",@ "]))];
-              Format.fprintf fmt "@])"]
-          in
-          Exp.case (pconstr name' (List.mapi (fun i _ -> pvar (argn i)) pcd_args)) result)
+        constrs |>
+        List.map
+          (function
+            |{ pcd_name = { txt = name' }; pcd_args = Pcstr_tuple argts } ->
+              let constr_name = Ppx_deriving.expand_path ~path name' in
+              let args = List.mapi (fun i typ -> app (expr_of_typ group_def typ) [evar (argn i)]) argts in
+              let result =
+                match args with
+                | []   -> [%expr Format.pp_print_string fmt [%e str constr_name]]
+                | [arg] ->
+                  [%expr
+                    Format.fprintf fmt [%e str ("(@[<hov2>" ^  constr_name ^ "@ ")];
+                    [%e arg];
+                    Format.fprintf fmt "@])"]
+                | args ->
+                  [%expr Format.fprintf fmt [%e str ("@[<hov2>" ^  constr_name ^ " (@,")];
+                         [%e args |> Ppx_deriving.(fold_exprs
+                                                     (seq_reduce ~sep:[%expr Format.fprintf fmt ",@ "]))];
+                         Format.fprintf fmt "@])"]
+              in
+              Exp.case (pconstr name' (List.mapi (fun i _ -> pvar (argn i)) argts)) result
+            | { pcd_args = Pcstr_record _ } ->
+              raise_errorf ~loc "%s currently doesn't support inline records" deriver)
       in
       [%expr fun fmt -> [%e Exp.function_ cases]]
     | Ptype_record labels, _ ->

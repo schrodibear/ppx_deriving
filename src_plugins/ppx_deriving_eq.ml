@@ -130,11 +130,17 @@ let str_of_type ~options ~path group_def ({ ptype_loc = loc } as type_decl) =
         | [] | [_] -> []
         | _ :: _ :: _ -> [Exp.case (pvar "_") [%expr false]] in
       let cases =
-        (constrs |> List.map (fun { pcd_name = { txt = name }; pcd_args = typs } ->
-          exprsn group_def typs |>
-          Ppx_deriving.(fold_exprs ~unit:[%expr true] (binop_reduce [%expr (&&)])) |>
-          Exp.case (ptuple [pconstr name (pattn `lhs typs);
-                            pconstr name (pattn `rhs typs)]))) @ wildcard 
+        (constrs |>
+         List.map
+           (function
+             | { pcd_name = { txt = name }; pcd_args = Pcstr_tuple typs } ->
+               exprsn group_def typs |>
+               Ppx_deriving.(fold_exprs ~unit:[%expr true] (binop_reduce [%expr (&&)])) |>
+               Exp.case (ptuple [pconstr name (pattn `lhs typs);
+                                 pconstr name (pattn `rhs typs)])
+             | { pcd_args = Pcstr_record _ } ->
+               raise_errorf ~loc "%s currently doesn't support inline records" deriver
+           )) @ wildcard
       in
       [%expr fun lhs rhs -> [%e Exp.match_ [%expr lhs, rhs] cases]]
     | Ptype_record labels, _ ->

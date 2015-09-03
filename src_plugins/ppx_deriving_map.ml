@@ -59,10 +59,14 @@ let str_of_type ~options ~path ({ ptype_loc = loc } as type_decl) =
     | Ptype_abstract, Some manifest -> expr_of_typ manifest
     | Ptype_variant constrs, _ ->
       constrs |>
-      List.map (fun { pcd_name = { txt = name' }; pcd_args } ->
-        let args = List.mapi (fun i typ -> app (expr_of_typ typ) [evar (argn i)]) pcd_args in
-        Exp.case (pconstr name' (List.mapi (fun i _ -> pvar (argn i)) pcd_args))
-                 (constr name' args)) |>
+      List.map
+        (function
+          | { pcd_name = { txt = name' }; pcd_args = Pcstr_tuple argts } ->
+            let args = List.mapi (fun i typ -> app (expr_of_typ typ) [evar (argn i)]) argts in
+            Exp.case (pconstr name' (List.mapi (fun i _ -> pvar (argn i)) argts))
+              (constr name' args)
+          | { pcd_args = Pcstr_record _ } ->
+            raise_errorf ~loc "%s currently doesn't support inline records" deriver) |>
       Exp.function_
     | Ptype_record labels, _ ->
       let fields =

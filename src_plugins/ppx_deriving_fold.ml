@@ -63,11 +63,17 @@ let str_of_type ~options ~path ({ ptype_loc = loc } as type_decl) =
     match type_decl.ptype_kind, type_decl.ptype_manifest with
     | Ptype_abstract, Some manifest -> expr_of_typ manifest
     | Ptype_variant constrs, _ ->
-      let cases = constrs |> List.map (fun { pcd_name = { txt = name' }; pcd_args } ->
-        let args = pcd_args |> List.mapi (fun i typ ->
-                      [%expr [%e expr_of_typ typ] acc [%e evar (argn i)]]) in
-        Exp.case (pconstr name' (List.mapi (fun i _ -> pvar (argn i)) pcd_args))
-                 Ppx_deriving.(fold_exprs ~unit:[%expr acc] reduce_acc args))
+      let cases =
+        constrs |>
+        List.map
+          (function
+            | { pcd_name = { txt = name' }; pcd_args = Pcstr_tuple argts } ->
+              let args = argts |> List.mapi (fun i typ ->
+                  [%expr [%e expr_of_typ typ] acc [%e evar (argn i)]]) in
+              Exp.case (pconstr name' (List.mapi (fun i _ -> pvar (argn i)) argts))
+                Ppx_deriving.(fold_exprs ~unit:[%expr acc] reduce_acc args)
+            | { pcd_args = Pcstr_record _ } ->
+              raise_errorf ~loc "%s currently doesn't support inline records" deriver )
       in
       [%expr fun acc -> [%e Exp.function_ cases]]
     | Ptype_record labels, _ ->

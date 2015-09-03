@@ -161,15 +161,27 @@ let str_of_type ~options ~path group_def ({ ptype_loc = loc } as type_decl) =
     | Ptype_abstract, Some manifest -> expr_of_typ group_def manifest
     | Ptype_variant constrs, _ ->
       let int_cases =
-          constrs |> List.mapi (fun i { pcd_name = { txt = name }; pcd_args } ->
-            match pcd_args with
-            | [] -> Exp.case (pconstr name []) (int i)
-            | _  -> Exp.case (pconstr name (List.map (fun _ -> [%pat? _]) pcd_args)) (int i))
+        constrs |>
+        List.mapi
+          (fun i ->
+             function
+             | { pcd_name = { txt = name }; pcd_args = Pcstr_tuple tys } ->
+               begin match tys with
+               | [] -> Exp.case (pconstr name []) (int i)
+               | _  -> Exp.case (pconstr name (List.map (fun _ -> [%pat? _]) tys)) (int i)
+               end
+             | { pcd_args = Pcstr_record _ } ->
+               raise_errorf ~loc "%s currently doesn't support inline records" deriver)
       and cases =
-        constrs |> List.map (fun { pcd_name = { txt = name }; pcd_args = typs } ->
-          exprsn group_def typs |> List.rev |> reduce_compare |>
-          Exp.case (ptuple [pconstr name (pattn `lhs typs);
-                            pconstr name (pattn `rhs typs)])) in
+        constrs |>
+        List.map
+          (function
+            | { pcd_name = { txt = name }; pcd_args = Pcstr_tuple typs } ->
+              exprsn group_def typs |> List.rev |> reduce_compare |>
+              Exp.case (ptuple [pconstr name (pattn `lhs typs);
+                                pconstr name (pattn `rhs typs)])
+            | { pcd_args = Pcstr_record _ } ->
+              raise_errorf ~loc "%s currently doesn't support inline records" deriver) in
       (* if the type as only one constructor, generating wildcard yield a warning. *)
       let wildcard = match constrs with
         | [] | [_] -> []
