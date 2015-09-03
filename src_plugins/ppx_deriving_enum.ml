@@ -29,7 +29,7 @@ let mappings_of_type type_decl =
     | Ptype_variant constrs, _ ->
       `Regular,
       List.fold_left (fun (acc, mappings) { pcd_name; pcd_args; pcd_attributes; pcd_loc } ->
-          if pcd_args <> [] then
+          if pcd_args <> Pcstr_tuple [] then
             raise_errorf ~loc:pcd_loc
                          "%s can be derived only for argumentless constructors" deriver;
           map acc mappings pcd_attributes pcd_name)
