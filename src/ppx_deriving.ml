@@ -232,22 +232,22 @@ let fresh_var bound =
   loop 0
 
 let poly_fun_of_type_decl type_decl expr =
-  fold_right_type_decl (fun name expr -> Exp.fun_ "" None (pvar ("poly_"^name)) expr) type_decl expr
+  fold_right_type_decl (fun name expr -> Exp.fun_ Nolabel None (pvar ("poly_"^name)) expr) type_decl expr
 
 let poly_fun_of_type_ext type_ext expr =
-  fold_right_type_ext (fun name expr -> Exp.fun_ "" None (pvar ("poly_"^name)) expr) type_ext expr
+  fold_right_type_ext (fun name expr -> Exp.fun_ Nolabel None (pvar ("poly_"^name)) expr) type_ext expr
 
 let poly_apply_of_type_decl type_decl expr =
-  fold_left_type_decl (fun expr name -> Exp.apply expr ["", evar ("poly_"^name)]) expr type_decl
+  fold_left_type_decl (fun expr name -> Exp.apply expr [Nolabel, evar ("poly_"^name)]) expr type_decl
 
 let poly_apply_of_type_ext type_ext expr =
-  fold_left_type_ext (fun expr name -> Exp.apply expr ["", evar ("poly_"^name)]) expr type_ext
+  fold_left_type_ext (fun expr name -> Exp.apply expr [Nolabel, evar ("poly_"^name)]) expr type_ext
 
 let poly_arrow_of_type_decl fn type_decl typ =
-  fold_right_type_decl (fun name typ -> Typ.arrow "" (fn (Typ.var name)) typ) type_decl typ
+  fold_right_type_decl (fun name typ -> Typ.arrow Nolabel (fn (Typ.var name)) typ) type_decl typ
 
 let poly_arrow_of_type_ext fn type_ext typ =
-  fold_right_type_ext (fun  name typ -> Typ.arrow "" (fn (Typ.var name)) typ) type_ext typ
+  fold_right_type_ext (fun  name typ -> Typ.arrow Nolabel (fn (Typ.var name)) typ) type_ext typ
 
 let core_type_of_type_decl { ptype_name = { txt = name }; ptype_params } =
   Typ.constr (mknoloc (Lident name)) (List.map fst ptype_params)
@@ -326,7 +326,7 @@ let derive path pstr_loc item attributes fn arg =
         match deriver_expr with
         | { pexp_desc = Pexp_ident name } ->
           name, []
-        | { pexp_desc = Pexp_apply ({ pexp_desc = Pexp_ident name }, ["",
+        | { pexp_desc = Pexp_apply ({ pexp_desc = Pexp_ident name }, [Nolabel,
             { pexp_desc = Pexp_record (options, None) }]) } ->
           name, options |> List.map (fun ({ txt }, expr) ->
             String.concat "." (Longident.flatten txt), expr)
@@ -396,7 +396,7 @@ let mapper =
   in
   let structure mapper items =
     match items with
-    | { pstr_desc = Pstr_type typ_decls; pstr_loc } as item :: rest when
+    | { pstr_desc = Pstr_type (_, typ_decls); pstr_loc } as item :: rest when
         List.exists (fun ty -> has_attr "deriving" ty.ptype_attributes) typ_decls ->
       Ast_helper.with_default_loc pstr_loc (fun () ->
         derive_type_decl module_nesting typ_decls pstr_loc item
@@ -426,7 +426,7 @@ let mapper =
   in
   let signature mapper items =
     match items with
-    | { psig_desc = Psig_type typ_decls; psig_loc } as item :: rest when
+    | { psig_desc = Psig_type (_, typ_decls); psig_loc } as item :: rest when
         List.exists (fun ty -> has_attr "deriving" ty.ptype_attributes) typ_decls ->
       Ast_helper.with_default_loc psig_loc (fun () ->
         derive_type_decl module_nesting typ_decls psig_loc item
