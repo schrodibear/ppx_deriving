@@ -1,0 +1,283 @@
+<html>
+<head>
+<link rel="stylesheet" href="style.css" type="text/css">
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+<link rel="Start" href="index.html">
+<link title="Index of types" rel=Appendix href="index_types.html">
+<link title="Index of values" rel=Appendix href="index_values.html">
+<link title="Index of modules" rel=Appendix href="index_modules.html">
+<link title="Ppx_deriving" rel="Chapter" href="Ppx_deriving.html">
+<link title="Ppx_deriving_runtime" rel="Chapter" href="Ppx_deriving_runtime.html"><title>API reference for ppx_deriving : Index of values</title>
+</head>
+<body>
+<div class="navbar">&nbsp;<a class="up" href="index.html" title="Index">Up</a>
+&nbsp;</div>
+<h1>Index of values</h1>
+<table>
+<tr><td align="left"><br>A</td></tr>
+<tr><td><a href="Ppx_deriving.html#VALattr">attr</a> [<a href="Ppx_deriving.html">Ppx_deriving</a>]</td>
+<td><div class="info">
+<code class="code">attr ~deriver name attrs</code> searches for an attribute <code class="code">[@deriving.deriver.attr]</code>
+    in <code class="code">attrs</code> if any attribute with name starting with <code class="code">@deriving.deriver</code> exists,
+    or <code class="code">[@deriver.attr]</code> if any attribute with name starting with <code class="code">@deriver</code> exists,
+    or <code class="code">[@attr]</code> otherwise.
+</div>
+</td></tr>
+<tr><td><a href="Ppx_deriving.html#VALattr_warning">attr_warning</a> [<a href="Ppx_deriving.html">Ppx_deriving</a>]</td>
+<td><div class="info">
+<code class="code">attr_warning expr</code> builds the attribute <code class="code">@ocaml.warning expr</code>
+</div>
+</td></tr>
+<tr><td align="left"><br>B</td></tr>
+<tr><td><a href="Ppx_deriving.html#VALbinop_reduce">binop_reduce</a> [<a href="Ppx_deriving.html">Ppx_deriving</a>]</td>
+<td><div class="info">
+<code class="code">binop_reduce</code> ≡ <code class="code"><span class="keyword">fun</span> x a b <span class="keywordsign">-&gt;</span> [%expr [%e x] [%e a] [%e b]]</code>.
+</div>
+</td></tr>
+<tr><td><a href="Ppx_deriving.Arg.html#VALbool">bool</a> [<a href="Ppx_deriving.Arg.html">Ppx_deriving.Arg</a>]</td>
+<td><div class="info">
+<code class="code">bool expr</code> extracts a boolean constant from <code class="code">expr</code>, or returns
+      <code class="code"><span class="keywordsign">`</span><span class="constructor">Error</span> <span class="string">"boolean"</span></code> if <code class="code">expr</code> does not contain a boolean constant.
+</div>
+</td></tr>
+<tr><td align="left"><br>C</td></tr>
+<tr><td><a href="Ppx_deriving.html#VALcore_type_of_type_decl">core_type_of_type_decl</a> [<a href="Ppx_deriving.html">Ppx_deriving</a>]</td>
+<td><div class="info">
+<code class="code">core_type_of_type_decl type_</code> constructs type <code class="code">(<span class="keywordsign">'</span>a, <span class="keywordsign">'</span>b, ...) t</code> for
+    type declaration <code class="code"><span class="keyword">type</span> (<span class="keywordsign">'</span>a, <span class="keywordsign">'</span>b, ...) t = ...</code>.
+</div>
+</td></tr>
+<tr><td><a href="Ppx_deriving.html#VALcore_type_of_type_ext">core_type_of_type_ext</a> [<a href="Ppx_deriving.html">Ppx_deriving</a>]</td>
+<td><div class="info">
+Same as <a href="Ppx_deriving.html#VALcore_type_of_type_decl"><code class="code"><span class="constructor">Ppx_deriving</span>.core_type_of_type_decl</code></a> but for type extension.
+</div>
+</td></tr>
+<tr><td><a href="Ppx_deriving.html#VALcreate">create</a> [<a href="Ppx_deriving.html">Ppx_deriving</a>]</td>
+<td><div class="info">
+Creating <a href="Ppx_deriving.html#TYPEderiver"><code class="code"><span class="constructor">Ppx_deriving</span>.deriver</code></a> structure.
+</div>
+</td></tr>
+<tr><td><a href="Ppx_deriving.html#VALcreate_quoter">create_quoter</a> [<a href="Ppx_deriving.html">Ppx_deriving</a>]</td>
+<td><div class="info">
+<code class="code">quoter ()</code> creates an empty quoter.
+</div>
+</td></tr>
+<tr><td align="left"><br>E</td></tr>
+<tr><td><a href="Ppx_deriving.Arg.html#VALenum">enum</a> [<a href="Ppx_deriving.Arg.html">Ppx_deriving.Arg</a>]</td>
+<td><div class="info">
+<code class="code">enum values expr</code> extracts a polymorphic variant constant from <code class="code">expr</code>,
+      or returns <code class="code"><span class="keywordsign">`</span><span class="constructor">Error</span> <span class="string">"one of: `a, `b, ..."</span></code> if <code class="code">expr</code> does not contain
+      a variant included in <code class="code">values</code>.
+</div>
+</td></tr>
+<tr><td><a href="Ppx_deriving.html#VALexpand_path">expand_path</a> [<a href="Ppx_deriving.html">Ppx_deriving</a>]</td>
+<td><div class="info">
+<code class="code">expand_path name</code> returns <code class="code">name</code> with the <code class="code">path</code> module path prepended,
+    e.g.
+</div>
+</td></tr>
+<tr><td><a href="Ppx_deriving.Arg.html#VALexpr">expr</a> [<a href="Ppx_deriving.Arg.html">Ppx_deriving.Arg</a>]</td>
+<td><div class="info">
+<code class="code">expr</code> returns the input expression as-is.
+</div>
+</td></tr>
+<tr><td align="left"><br>F</td></tr>
+<tr><td><a href="Ppx_deriving.html#VALfold_exprs">fold_exprs</a> [<a href="Ppx_deriving.html">Ppx_deriving</a>]</td>
+<td><div class="info">
+<code class="code">fold_exprs ~unit fn exprs</code> folds <code class="code">exprs</code> using head of <code class="code">exprs</code> as initial
+    accumulator value, or <code class="code">unit</code> if <code class="code">exprs = []</code>.
+</div>
+</td></tr>
+<tr><td><a href="Ppx_deriving.html#VALfold_left_type_decl">fold_left_type_decl</a> [<a href="Ppx_deriving.html">Ppx_deriving</a>]</td>
+<td><div class="info">
+<code class="code">fold_left_type_decl fn accum type_</code> performs a left fold over all type variable
+    (i.e.
+</div>
+</td></tr>
+<tr><td><a href="Ppx_deriving.html#VALfold_left_type_ext">fold_left_type_ext</a> [<a href="Ppx_deriving.html">Ppx_deriving</a>]</td>
+<td><div class="info">
+<code class="code">fold_left_type_ext fn accum type_</code> performs a left fold over all type variable (i.e.
+</div>
+</td></tr>
+<tr><td><a href="Ppx_deriving.html#VALfold_right_type_decl">fold_right_type_decl</a> [<a href="Ppx_deriving.html">Ppx_deriving</a>]</td>
+<td><div class="info">
+<code class="code">fold_right_type_decl fn accum type_</code> performs a right fold over all type variable
+    (i.e.
+</div>
+</td></tr>
+<tr><td><a href="Ppx_deriving.html#VALfold_right_type_ext">fold_right_type_ext</a> [<a href="Ppx_deriving.html">Ppx_deriving</a>]</td>
+<td><div class="info">
+<code class="code">fold_right_type_ext fn accum type_</code> performs a right fold over all type variable (i.e.
+</div>
+</td></tr>
+<tr><td><a href="Ppx_deriving.html#VALfree_vars_in_core_type">free_vars_in_core_type</a> [<a href="Ppx_deriving.html">Ppx_deriving</a>]</td>
+<td><div class="info">
+<code class="code">free_vars_in_core_type typ</code> returns unique free variables in <code class="code">typ</code> in
+    lexical order.
+</div>
+</td></tr>
+<tr><td><a href="Ppx_deriving.html#VALfresh_var">fresh_var</a> [<a href="Ppx_deriving.html">Ppx_deriving</a>]</td>
+<td><div class="info">
+<code class="code">fresh_var bound</code> returns a fresh variable name not present in <code class="code">bound</code>.
+</div>
+</td></tr>
+<tr><td align="left"><br>G</td></tr>
+<tr><td><a href="Ppx_deriving.Arg.html#VALget_attr">get_attr</a> [<a href="Ppx_deriving.Arg.html">Ppx_deriving.Arg</a>]</td>
+<td><div class="info">
+<code class="code">get_attr ~deriver conv attr</code> extracts the expression from <code class="code">attr</code> and converts
+      it with <code class="code">conv</code>, raising <code class="code"><span class="constructor">Location</span>.<span class="constructor">Error</span></code> if <code class="code">attr</code> is not a structure with
+      a single expression or <code class="code">conv</code> fails; or returns <code class="code"><span class="constructor">None</span></code> if <code class="code">attr</code> is <code class="code"><span class="constructor">None</span></code>.
+</div>
+</td></tr>
+<tr><td><a href="Ppx_deriving.Arg.html#VALget_expr">get_expr</a> [<a href="Ppx_deriving.Arg.html">Ppx_deriving.Arg</a>]</td>
+<td><div class="info">
+<code class="code">get_expr ~deriver conv exp</code> converts expression <code class="code">exp</code> with <code class="code">conv</code>, raising
+      <code class="code"><span class="constructor">Location</span>.<span class="constructor">Error</span></code> if <code class="code">conv</code> fails.
+</div>
+</td></tr>
+<tr><td><a href="Ppx_deriving.Arg.html#VALget_flag">get_flag</a> [<a href="Ppx_deriving.Arg.html">Ppx_deriving.Arg</a>]</td>
+<td><div class="info">
+<code class="code">get_flag ~deriver attr</code> returns <code class="code"><span class="keyword">true</span></code> if <code class="code">attr</code> is an empty attribute
+      or <code class="code"><span class="keyword">false</span></code> if it is absent, raising <code class="code"><span class="constructor">Location</span>.<span class="constructor">Error</span></code> if <code class="code">attr</code> is not
+      a structure.
+</div>
+</td></tr>
+<tr><td align="left"><br>H</td></tr>
+<tr><td><a href="Ppx_deriving.html#VALhash_variant">hash_variant</a> [<a href="Ppx_deriving.html">Ppx_deriving</a>]</td>
+<td><div class="info">
+<code class="code">hash_variant x</code> ≡ <code class="code"><span class="constructor">Btype</span>.hash_variant x</code>.
+</div>
+</td></tr>
+<tr><td align="left"><br>I</td></tr>
+<tr><td><a href="Ppx_deriving.Arg.html#VALint">int</a> [<a href="Ppx_deriving.Arg.html">Ppx_deriving.Arg</a>]</td>
+<td><div class="info">
+<code class="code">int expr</code> extracts an integer constant from <code class="code">expr</code>, or returns
+      <code class="code"><span class="keywordsign">`</span><span class="constructor">Error</span> <span class="string">"integer"</span></code> if <code class="code">expr</code> does not contain an integer constant.
+</div>
+</td></tr>
+<tr><td align="left"><br>L</td></tr>
+<tr><td><a href="Ppx_deriving.html#VALlookup">lookup</a> [<a href="Ppx_deriving.html">Ppx_deriving</a>]</td>
+<td><div class="info">
+<code class="code">lookup name</code> looks up a deriver called <code class="code">name</code>.
+</div>
+</td></tr>
+<tr><td align="left"><br>M</td></tr>
+<tr><td><a href="Ppx_deriving.html#VALmangle_lid">mangle_lid</a> [<a href="Ppx_deriving.html">Ppx_deriving</a>]</td>
+<td><div class="info">
+<code class="code">mangle_lid ~fixpoint affix lid</code> does the same as <a href="Ppx_deriving.html#VALmangle_type_decl"><code class="code"><span class="constructor">Ppx_deriving</span>.mangle_type_decl</code></a>, but for
+    the last component of <code class="code">lid</code>.
+</div>
+</td></tr>
+<tr><td><a href="Ppx_deriving.html#VALmangle_type_decl">mangle_type_decl</a> [<a href="Ppx_deriving.html">Ppx_deriving</a>]</td>
+<td><div class="info">
+<code class="code">mangle_type_decl ~fixpoint affix type_</code> derives a function name from <code class="code">type_</code> name
+    by doing nothing if <code class="code">type_</code> is named <code class="code">fixpoint</code> (<code class="code"><span class="string">"t"</span></code> by default), or
+    appending and/or prepending <code class="code">affix</code> via an underscore.
+</div>
+</td></tr>
+<tr><td><a href="Ppx_deriving.html#VALmapper">mapper</a> [<a href="Ppx_deriving.html">Ppx_deriving</a>]</td>
+<td><div class="info">
+The mapper for the currently loaded deriving plugins.
+</div>
+</td></tr>
+<tr><td align="left"><br>P</td></tr>
+<tr><td><a href="Ppx_deriving.html#VALpath_of_type_decl">path_of_type_decl</a> [<a href="Ppx_deriving.html">Ppx_deriving</a>]</td>
+<td><div class="info">
+<code class="code">path_of_type_decl ~path type_</code> returns <code class="code">path</code> if <code class="code">type_</code> does not have a manifest
+    or the manifest is not a constructor, and the module path of manifest otherwise.
+</div>
+</td></tr>
+<tr><td><a href="Ppx_deriving.html#VALpoly_apply_of_type_decl">poly_apply_of_type_decl</a> [<a href="Ppx_deriving.html">Ppx_deriving</a>]</td>
+<td><div class="info">
+<code class="code">poly_apply_of_type_decl type_ expr</code> wraps <code class="code">expr</code> into <code class="code">expr poly_N</code> for every
+    type parameter <code class="code"><span class="keywordsign">'</span><span class="constructor">N</span></code> present in <code class="code">type_</code>.
+</div>
+</td></tr>
+<tr><td><a href="Ppx_deriving.html#VALpoly_apply_of_type_ext">poly_apply_of_type_ext</a> [<a href="Ppx_deriving.html">Ppx_deriving</a>]</td>
+<td><div class="info">
+Same as <a href="Ppx_deriving.html#VALpoly_apply_of_type_decl"><code class="code"><span class="constructor">Ppx_deriving</span>.poly_apply_of_type_decl</code></a> but for type extension.
+</div>
+</td></tr>
+<tr><td><a href="Ppx_deriving.html#VALpoly_arrow_of_type_decl">poly_arrow_of_type_decl</a> [<a href="Ppx_deriving.html">Ppx_deriving</a>]</td>
+<td><div class="info">
+<code class="code">poly_arrow_of_type_decl fn type_ typ</code> wraps <code class="code">typ</code> in an arrow with <code class="code">fn [%<span class="keyword">type</span>: <span class="keywordsign">'</span><span class="constructor">N</span>]</code>
+    as argument for every type parameter <code class="code"><span class="keywordsign">'</span><span class="constructor">N</span></code> present in <code class="code">type_</code>.
+</div>
+</td></tr>
+<tr><td><a href="Ppx_deriving.html#VALpoly_arrow_of_type_ext">poly_arrow_of_type_ext</a> [<a href="Ppx_deriving.html">Ppx_deriving</a>]</td>
+<td><div class="info">
+Same as <a href="Ppx_deriving.html#VALpoly_arrow_of_type_decl"><code class="code"><span class="constructor">Ppx_deriving</span>.poly_arrow_of_type_decl</code></a> but for type extension.
+</div>
+</td></tr>
+<tr><td><a href="Ppx_deriving.html#VALpoly_fun_of_type_decl">poly_fun_of_type_decl</a> [<a href="Ppx_deriving.html">Ppx_deriving</a>]</td>
+<td><div class="info">
+<code class="code">poly_fun_of_type_decl type_ expr</code> wraps <code class="code">expr</code> into <code class="code"><span class="keyword">fun</span> poly_N <span class="keywordsign">-&gt;</span> ...</code> for every
+    type parameter <code class="code"><span class="keywordsign">'</span><span class="constructor">N</span></code> present in <code class="code">type_</code>.
+</div>
+</td></tr>
+<tr><td><a href="Ppx_deriving.html#VALpoly_fun_of_type_ext">poly_fun_of_type_ext</a> [<a href="Ppx_deriving.html">Ppx_deriving</a>]</td>
+<td><div class="info">
+Same as <a href="Ppx_deriving.html#VALpoly_fun_of_type_decl"><code class="code"><span class="constructor">Ppx_deriving</span>.poly_fun_of_type_decl</code></a> but for type extension.
+</div>
+</td></tr>
+<tr><td align="left"><br>Q</td></tr>
+<tr><td><a href="Ppx_deriving.html#VALquote">quote</a> [<a href="Ppx_deriving.html">Ppx_deriving</a>]</td>
+<td><div class="info">
+<code class="code">quote quoter expr</code> records a pure expression <code class="code">expr</code> within <code class="code">quoter</code> and
+    returns an expression which has the same value as <code class="code">expr</code> in the context
+    that <code class="code">sanitize</code> provides.
+</div>
+</td></tr>
+<tr><td align="left"><br>R</td></tr>
+<tr><td><a href="Ppx_deriving.html#VALraise_errorf">raise_errorf</a> [<a href="Ppx_deriving.html">Ppx_deriving</a>]</td>
+<td><div class="info">
+<code class="code">raise_error</code> is a shorthand for raising <code class="code"><span class="constructor">Location</span>.<span class="constructor">Error</span></code> with the result
+    of <code class="code"><span class="constructor">Location</span>.errorf</code>.
+</div>
+</td></tr>
+<tr><td><a href="Ppx_deriving.html#VALregister">register</a> [<a href="Ppx_deriving.html">Ppx_deriving</a>]</td>
+<td><div class="info">
+<code class="code">register deriver</code> registers <code class="code">deriver</code> according to its <code class="code">name</code> field.
+</div>
+</td></tr>
+<tr><td align="left"><br>S</td></tr>
+<tr><td><a href="Ppx_deriving.html#VALsanitize">sanitize</a> [<a href="Ppx_deriving.html">Ppx_deriving</a>]</td>
+<td><div class="info">
+<code class="code">sanitize quoter expr</code> wraps <code class="code">expr</code> in a way that ensures that the contents of
+    <a href="Ppx_deriving_runtime.html"><code class="code"><span class="constructor">Ppx_deriving_runtime</span></code></a> and <code class="code"><span class="constructor">Pervasives</span></code>, as well as the identifiers in
+    expressions returned by <code class="code">quote</code> are in scope, and returns the wrapped expression.
+</div>
+</td></tr>
+<tr><td><a href="Ppx_deriving.html#VALseq_reduce">seq_reduce</a> [<a href="Ppx_deriving.html">Ppx_deriving</a>]</td>
+<td><div class="info">
+When <code class="code">sep</code> is present:
+    <code class="code">seq_reduce</code> ≡ <code class="code"><span class="keyword">fun</span> x a b <span class="keywordsign">-&gt;</span> [%expr [%e a]; [%e x]; [%e b]]</code>.
+</div>
+</td></tr>
+<tr><td><a href="Ppx_deriving.Arg.html#VALstring">string</a> [<a href="Ppx_deriving.Arg.html">Ppx_deriving.Arg</a>]</td>
+<td><div class="info">
+<code class="code">string expr</code> extracts a string constant from <code class="code">expr</code>, or returns
+      <code class="code"><span class="keywordsign">`</span><span class="constructor">Error</span> <span class="string">"string"</span></code> if <code class="code">expr</code> does not contain a string constant.
+</div>
+</td></tr>
+<tr><td><a href="Ppx_deriving.html#VALstring_of_core_type">string_of_core_type</a> [<a href="Ppx_deriving.html">Ppx_deriving</a>]</td>
+<td><div class="info">
+<code class="code">string_of_core_type typ</code> unparses <code class="code">typ</code>, omitting any attributes.
+</div>
+</td></tr>
+<tr><td><a href="Ppx_deriving.html#VALstrong_type_of_type">strong_type_of_type</a> [<a href="Ppx_deriving.html">Ppx_deriving</a>]</td>
+<td><div class="info">
+<code class="code">strong_type_of_type ty</code> transform a type ty to
+    <code class="code">freevars . ty</code>, giving a strong polymorphic type
+</div>
+</td></tr>
+<tr><td align="left"><br>W</td></tr>
+<tr><td><a href="Ppx_deriving.html#VALwith_quoter">with_quoter</a> [<a href="Ppx_deriving.html">Ppx_deriving</a>]</td>
+<td><div class="info">
+<code class="code">with_quoter fn</code> ≡
+    <code class="code"><span class="keyword">fun</span> fn a <span class="keywordsign">-&gt;</span> <span class="keyword">let</span> quoter = create_quoter () <span class="keyword">in</span> sanitize ~quoter (fn quoter a)</code>
+</div>
+</td></tr>
+</table>
+</body>
+</html>

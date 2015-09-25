@@ -1,0 +1,310 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<link rel="stylesheet" href="style.css" type="text/css">
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+<link rel="Start" href="index.html">
+<link rel="next" href="Ppx_deriving_runtime.html">
+<link rel="Up" href="index.html">
+<link title="Index of types" rel=Appendix href="index_types.html">
+<link title="Index of values" rel=Appendix href="index_values.html">
+<link title="Index of modules" rel=Appendix href="index_modules.html">
+<link title="Ppx_deriving" rel="Chapter" href="Ppx_deriving.html">
+<link title="Ppx_deriving_runtime" rel="Chapter" href="Ppx_deriving_runtime.html"><link title="Registration" rel="Section" href="#2_Registration">
+<link title="Error handling" rel="Section" href="#2_Errorhandling">
+<link title="Option parsing" rel="Section" href="#2_Optionparsing">
+<link title="Hygiene" rel="Section" href="#2_Hygiene">
+<link title="AST manipulation" rel="Section" href="#2_ASTmanipulation">
+<link title="Miscellanea" rel="Section" href="#2_Miscellanea">
+<title>API reference for ppx_deriving : Ppx_deriving</title>
+</head>
+<body>
+<div class="navbar">&nbsp;<a class="up" href="index.html" title="Index">Up</a>
+&nbsp;<a class="post" href="Ppx_deriving_runtime.html" title="Ppx_deriving_runtime">Next</a>
+</div>
+<h1>Module <a href="type_Ppx_deriving.html">Ppx_deriving</a></h1>
+
+<pre><span class="keyword">module</span> Ppx_deriving: <code class="code"><span class="keyword">sig</span></code> <a href="Ppx_deriving.html">..</a> <code class="code"><span class="keyword">end</span></code></pre><div class="info module top">
+Public API of <code class="code">ppx_deriving</code> executable.<br>
+</div>
+<hr width="100%">
+<br>
+<h2 id="2_Registration">Registration</h2><br>
+
+<pre><code><span id="TYPEderiver"><span class="keyword">type</span> <code class="type"></code>deriver</span> = {</code></pre><table class="typetable">
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTderiver.name">name</span>&nbsp;: <code class="type">string</code>;</code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTderiver.core_type">core_type</span>&nbsp;: <code class="type">(Parsetree.core_type -> Parsetree.expression) option</code>;</code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTderiver.type_decl_str">type_decl_str</span>&nbsp;: <code class="type">options:(string * Parsetree.expression) list -><br>       path:string list -> Parsetree.type_declaration list -> Parsetree.structure</code>;</code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTderiver.type_ext_str">type_ext_str</span>&nbsp;: <code class="type">options:(string * Parsetree.expression) list -><br>       path:string list -> Parsetree.type_extension -> Parsetree.structure</code>;</code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTderiver.type_decl_sig">type_decl_sig</span>&nbsp;: <code class="type">options:(string * Parsetree.expression) list -><br>       path:string list -> Parsetree.type_declaration list -> Parsetree.signature</code>;</code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTderiver.type_ext_sig">type_ext_sig</span>&nbsp;: <code class="type">options:(string * Parsetree.expression) list -><br>       path:string list -> Parsetree.type_extension -> Parsetree.signature</code>;</code></td>
+
+</tr></table>
+}
+
+<div class="info ">
+A type of deriving plugins.
+<p>
+
+    A structure or signature deriving function accepts a list of
+    <code class="code">~options</code>, a <code class="code">~path</code> of modules for the type declaration currently
+    being processed (with <code class="code">[]</code> for toplevel phrases), and a type declaration
+    item (<code class="code"><span class="keyword">type</span> t = .. <span class="keyword">and</span> t' = ..</code>), and returns a list of items to be
+    appended after the type declaration item in structure and signature.
+    It is invoked by <code class="code">[@@deriving]</code> annotations.
+<p>
+
+    A type deriving function accepts a type and returns a corresponding
+    derived expression. It is invoked by <code class="code">[%derive.foo:]</code> and <code class="code">[%foo:]</code>
+    annotations. If this function is missing, the corresponding <code class="code">[%foo:]</code>
+    annotation is ignored.<br>
+</div>
+
+
+<pre><span id="VALregister"><span class="keyword">val</span> register</span> : <code class="type"><a href="Ppx_deriving.html#TYPEderiver">deriver</a> -> unit</code></pre><div class="info ">
+<code class="code">register deriver</code> registers <code class="code">deriver</code> according to its <code class="code">name</code> field.<br>
+</div>
+
+<pre><span id="VALcreate"><span class="keyword">val</span> create</span> : <code class="type">string -><br>       ?core_type:(Parsetree.core_type -> Parsetree.expression) -><br>       ?type_ext_str:(options:(string * Parsetree.expression) list -><br>                      path:string list -><br>                      Parsetree.type_extension -> Parsetree.structure) -><br>       ?type_ext_sig:(options:(string * Parsetree.expression) list -><br>                      path:string list -><br>                      Parsetree.type_extension -> Parsetree.signature) -><br>       ?type_decl_str:(options:(string * Parsetree.expression) list -><br>                       path:string list -><br>                       Parsetree.type_declaration list -> Parsetree.structure) -><br>       ?type_decl_sig:(options:(string * Parsetree.expression) list -><br>                       path:string list -><br>                       Parsetree.type_declaration list -> Parsetree.signature) -><br>       unit -> <a href="Ppx_deriving.html#TYPEderiver">deriver</a></code></pre><div class="info ">
+Creating <a href="Ppx_deriving.html#TYPEderiver"><code class="code"><span class="constructor">Ppx_deriving</span>.deriver</code></a> structure.<br>
+</div>
+
+<pre><span id="VALlookup"><span class="keyword">val</span> lookup</span> : <code class="type">string -> <a href="Ppx_deriving.html#TYPEderiver">deriver</a> option</code></pre><div class="info ">
+<code class="code">lookup name</code> looks up a deriver called <code class="code">name</code>.<br>
+</div>
+<br>
+<h2 id="2_Errorhandling">Error handling</h2><br>
+
+<pre><span id="VALraise_errorf"><span class="keyword">val</span> raise_errorf</span> : <code class="type">?sub:Location.error list -><br>       ?if_highlight:string -><br>       ?loc:Location.t -> ('a, unit, string, 'b) Pervasives.format4 -> 'a</code></pre><div class="info ">
+<code class="code">raise_error</code> is a shorthand for raising <code class="code"><span class="constructor">Location</span>.<span class="constructor">Error</span></code> with the result
+    of <code class="code"><span class="constructor">Location</span>.errorf</code>.<br>
+</div>
+
+<pre><span id="VALstring_of_core_type"><span class="keyword">val</span> string_of_core_type</span> : <code class="type">Parsetree.core_type -> string</code></pre><div class="info ">
+<code class="code">string_of_core_type typ</code> unparses <code class="code">typ</code>, omitting any attributes.<br>
+</div>
+<br>
+<h2 id="2_Optionparsing">Option parsing</h2><br>
+
+<pre><span class="keyword">module</span> <a href="Ppx_deriving.Arg.html">Arg</a>: <code class="code"><span class="keyword">sig</span></code> <a href="Ppx_deriving.Arg.html">..</a> <code class="code"><span class="keyword">end</span></code></pre><div class="info">
+<a href="Ppx_deriving.Arg.html"><code class="code"><span class="constructor">Ppx_deriving</span>.<span class="constructor">Arg</span></code></a> contains convenience functions that extract constants from
+    AST fragments, to be used when parsing options or <code class="code">[@attributes]</code>
+    attached to types, fields or constructors.
+</div>
+<br>
+<h2 id="2_Hygiene">Hygiene</h2><br>
+
+<pre><span id="TYPEquoter"><span class="keyword">type</span> <code class="type"></code>quoter</span> </pre>
+<div class="info ">
+A <code class="code">quoter</code> remembers a set of expressions.<br>
+</div>
+
+
+<pre><span id="VALcreate_quoter"><span class="keyword">val</span> create_quoter</span> : <code class="type">unit -> <a href="Ppx_deriving.html#TYPEquoter">quoter</a></code></pre><div class="info ">
+<code class="code">quoter ()</code> creates an empty quoter.<br>
+</div>
+
+<pre><span id="VALquote"><span class="keyword">val</span> quote</span> : <code class="type">quoter:<a href="Ppx_deriving.html#TYPEquoter">quoter</a> -> Parsetree.expression -> Parsetree.expression</code></pre><div class="info ">
+<code class="code">quote quoter expr</code> records a pure expression <code class="code">expr</code> within <code class="code">quoter</code> and
+    returns an expression which has the same value as <code class="code">expr</code> in the context
+    that <code class="code">sanitize</code> provides.<br>
+</div>
+
+<pre><span id="VALsanitize"><span class="keyword">val</span> sanitize</span> : <code class="type">?quoter:<a href="Ppx_deriving.html#TYPEquoter">quoter</a> -> Parsetree.expression -> Parsetree.expression</code></pre><div class="info ">
+<code class="code">sanitize quoter expr</code> wraps <code class="code">expr</code> in a way that ensures that the contents of
+    <a href="Ppx_deriving_runtime.html"><code class="code"><span class="constructor">Ppx_deriving_runtime</span></code></a> and <code class="code"><span class="constructor">Pervasives</span></code>, as well as the identifiers in
+    expressions returned by <code class="code">quote</code> are in scope, and returns the wrapped expression.<br>
+</div>
+
+<pre><span id="VALwith_quoter"><span class="keyword">val</span> with_quoter</span> : <code class="type">(<a href="Ppx_deriving.html#TYPEquoter">quoter</a> -> 'a -> Parsetree.expression) -><br>       'a -> Parsetree.expression</code></pre><div class="info ">
+<code class="code">with_quoter fn</code> ≡
+    <code class="code"><span class="keyword">fun</span> fn a <span class="keywordsign">-&gt;</span> <span class="keyword">let</span> quoter = create_quoter () <span class="keyword">in</span> sanitize ~quoter (fn quoter a)</code><br>
+</div>
+<br>
+<h2 id="2_ASTmanipulation">AST manipulation</h2><br>
+
+<pre><span id="VALexpand_path"><span class="keyword">val</span> expand_path</span> : <code class="type">path:string list -> string -> string</code></pre><div class="info ">
+<code class="code">expand_path name</code> returns <code class="code">name</code> with the <code class="code">path</code> module path prepended,
+    e.g. <code class="code">expand_path [<span class="string">"Foo"</span>;<span class="string">"M"</span>] <span class="string">"t"</span></code> = <code class="code"><span class="string">"Foo.M.t"</span></code> and <code class="code">expand_path [] <span class="string">"t"</span></code> = <code class="code"><span class="string">"t"</span></code><br>
+</div>
+
+<pre><span id="VALpath_of_type_decl"><span class="keyword">val</span> path_of_type_decl</span> : <code class="type">path:string list -> Parsetree.type_declaration -> string list</code></pre><div class="info ">
+<code class="code">path_of_type_decl ~path type_</code> returns <code class="code">path</code> if <code class="code">type_</code> does not have a manifest
+    or the manifest is not a constructor, and the module path of manifest otherwise.
+<p>
+
+    <code class="code">path_of_type_decl</code> is useful when determining the canonical path location
+    of fields and constructors; e.g. for <code class="code"><span class="keyword">type</span> bar = <span class="constructor">M</span>.foo = <span class="constructor">A</span> <span class="keywordsign">|</span> <span class="constructor">B</span></code>, it will return
+    <code class="code">[<span class="string">"M"</span>]</code>.<br>
+</div>
+
+<pre><span id="VALmangle_type_decl"><span class="keyword">val</span> mangle_type_decl</span> : <code class="type">?fixpoint:string -><br>       [ `Prefix of string | `PrefixSuffix of string * string | `Suffix of string ] -><br>       Parsetree.type_declaration -> string</code></pre><div class="info ">
+<code class="code">mangle_type_decl ~fixpoint affix type_</code> derives a function name from <code class="code">type_</code> name
+    by doing nothing if <code class="code">type_</code> is named <code class="code">fixpoint</code> (<code class="code"><span class="string">"t"</span></code> by default), or
+    appending and/or prepending <code class="code">affix</code> via an underscore.<br>
+</div>
+
+<pre><span id="VALmangle_lid"><span class="keyword">val</span> mangle_lid</span> : <code class="type">?fixpoint:string -><br>       [ `Prefix of string | `PrefixSuffix of string * string | `Suffix of string ] -><br>       Longident.t -> Longident.t</code></pre><div class="info ">
+<code class="code">mangle_lid ~fixpoint affix lid</code> does the same as <a href="Ppx_deriving.html#VALmangle_type_decl"><code class="code"><span class="constructor">Ppx_deriving</span>.mangle_type_decl</code></a>, but for
+    the last component of <code class="code">lid</code>.<br>
+</div>
+
+<pre><span id="VALattr"><span class="keyword">val</span> attr</span> : <code class="type">deriver:string -><br>       string -> Parsetree.attributes -> Parsetree.attribute option</code></pre><div class="info ">
+<code class="code">attr ~deriver name attrs</code> searches for an attribute <code class="code">[@deriving.deriver.attr]</code>
+    in <code class="code">attrs</code> if any attribute with name starting with <code class="code">@deriving.deriver</code> exists,
+    or <code class="code">[@deriver.attr]</code> if any attribute with name starting with <code class="code">@deriver</code> exists,
+    or <code class="code">[@attr]</code> otherwise.<br>
+</div>
+
+<pre><span id="VALattr_warning"><span class="keyword">val</span> attr_warning</span> : <code class="type">Parsetree.expression -> Parsetree.attribute</code></pre><div class="info ">
+<code class="code">attr_warning expr</code> builds the attribute <code class="code">@ocaml.warning expr</code><br>
+</div>
+
+<pre><span id="VALfree_vars_in_core_type"><span class="keyword">val</span> free_vars_in_core_type</span> : <code class="type">Parsetree.core_type -> string list</code></pre><div class="info ">
+<code class="code">free_vars_in_core_type typ</code> returns unique free variables in <code class="code">typ</code> in
+    lexical order.<br>
+</div>
+
+<pre><span id="VALfresh_var"><span class="keyword">val</span> fresh_var</span> : <code class="type">string list -> string</code></pre><div class="info ">
+<code class="code">fresh_var bound</code> returns a fresh variable name not present in <code class="code">bound</code>.
+    The name is selected in alphabetical succession.<br>
+</div>
+
+<pre><span id="VALfold_left_type_decl"><span class="keyword">val</span> fold_left_type_decl</span> : <code class="type">('a -> string -> 'a) -> 'a -> Parsetree.type_declaration -> 'a</code></pre><div class="info ">
+<code class="code">fold_left_type_decl fn accum type_</code> performs a left fold over all type variable
+    (i.e. not wildcard) parameters in <code class="code">type_</code>.<br>
+</div>
+
+<pre><span id="VALfold_right_type_decl"><span class="keyword">val</span> fold_right_type_decl</span> : <code class="type">(string -> 'a -> 'a) -> Parsetree.type_declaration -> 'a -> 'a</code></pre><div class="info ">
+<code class="code">fold_right_type_decl fn accum type_</code> performs a right fold over all type variable
+    (i.e. not wildcard) parameters in <code class="code">type_</code>.<br>
+</div>
+
+<pre><span id="VALfold_left_type_ext"><span class="keyword">val</span> fold_left_type_ext</span> : <code class="type">('a -> string -> 'a) -> 'a -> Parsetree.type_extension -> 'a</code></pre><div class="info ">
+<code class="code">fold_left_type_ext fn accum type_</code> performs a left fold over all type variable (i.e. not
+    wildcard) parameters in <code class="code">type_</code>.<br>
+</div>
+
+<pre><span id="VALfold_right_type_ext"><span class="keyword">val</span> fold_right_type_ext</span> : <code class="type">(string -> 'a -> 'a) -> Parsetree.type_extension -> 'a -> 'a</code></pre><div class="info ">
+<code class="code">fold_right_type_ext fn accum type_</code> performs a right fold over all type variable (i.e. not
+    wildcard) parameters in <code class="code">type_</code>.<br>
+</div>
+
+<pre><span id="VALpoly_fun_of_type_decl"><span class="keyword">val</span> poly_fun_of_type_decl</span> : <code class="type">Parsetree.type_declaration -> Parsetree.expression -> Parsetree.expression</code></pre><div class="info ">
+<code class="code">poly_fun_of_type_decl type_ expr</code> wraps <code class="code">expr</code> into <code class="code"><span class="keyword">fun</span> poly_N <span class="keywordsign">-&gt;</span> ...</code> for every
+    type parameter <code class="code"><span class="keywordsign">'</span><span class="constructor">N</span></code> present in <code class="code">type_</code>. For example, if <code class="code">type_</code> refers to
+    <code class="code"><span class="keyword">type</span> (<span class="keywordsign">'</span>a, <span class="keywordsign">'</span>b) map</code>, <code class="code">expr</code> will be wrapped into <code class="code"><span class="keyword">fun</span> poly_a poly_b <span class="keywordsign">-&gt;</span> [%e expr]</code>.
+<p>
+
+    <code class="code">_</code> parameters are ignored.<br>
+</div>
+
+<pre><span id="VALpoly_fun_of_type_ext"><span class="keyword">val</span> poly_fun_of_type_ext</span> : <code class="type">Parsetree.type_extension -> Parsetree.expression -> Parsetree.expression</code></pre><div class="info ">
+Same as <a href="Ppx_deriving.html#VALpoly_fun_of_type_decl"><code class="code"><span class="constructor">Ppx_deriving</span>.poly_fun_of_type_decl</code></a> but for type extension.<br>
+</div>
+
+<pre><span id="VALpoly_apply_of_type_decl"><span class="keyword">val</span> poly_apply_of_type_decl</span> : <code class="type">Parsetree.type_declaration -> Parsetree.expression -> Parsetree.expression</code></pre><div class="info ">
+<code class="code">poly_apply_of_type_decl type_ expr</code> wraps <code class="code">expr</code> into <code class="code">expr poly_N</code> for every
+    type parameter <code class="code"><span class="keywordsign">'</span><span class="constructor">N</span></code> present in <code class="code">type_</code>. For example, if <code class="code">type_</code> refers to
+    <code class="code"><span class="keyword">type</span> (<span class="keywordsign">'</span>a, <span class="keywordsign">'</span>b) map</code>, <code class="code">expr</code> will be wrapped into <code class="code">[%e expr] poly_a poly_b</code>.
+<p>
+
+    <code class="code">_</code> parameters are ignored.<br>
+</div>
+
+<pre><span id="VALpoly_apply_of_type_ext"><span class="keyword">val</span> poly_apply_of_type_ext</span> : <code class="type">Parsetree.type_extension -> Parsetree.expression -> Parsetree.expression</code></pre><div class="info ">
+Same as <a href="Ppx_deriving.html#VALpoly_apply_of_type_decl"><code class="code"><span class="constructor">Ppx_deriving</span>.poly_apply_of_type_decl</code></a> but for type extension.<br>
+</div>
+
+<pre><span id="VALpoly_arrow_of_type_decl"><span class="keyword">val</span> poly_arrow_of_type_decl</span> : <code class="type">(Parsetree.core_type -> Parsetree.core_type) -><br>       Parsetree.type_declaration -> Parsetree.core_type -> Parsetree.core_type</code></pre><div class="info ">
+<code class="code">poly_arrow_of_type_decl fn type_ typ</code> wraps <code class="code">typ</code> in an arrow with <code class="code">fn [%<span class="keyword">type</span>: <span class="keywordsign">'</span><span class="constructor">N</span>]</code>
+    as argument for every type parameter <code class="code"><span class="keywordsign">'</span><span class="constructor">N</span></code> present in <code class="code">type_</code>. For example, if
+    <code class="code">type_</code> refers to <code class="code"><span class="keyword">type</span> (<span class="keywordsign">'</span>a, <span class="keywordsign">'</span>b) map</code> and <code class="code">fn</code> is <code class="code"><span class="keyword">fun</span> var <span class="keywordsign">-&gt;</span> [%<span class="keyword">type</span>: [%t var] <span class="keywordsign">-&gt;</span> string]</code>,
+    <code class="code">typ</code> will be wrapped into <code class="code">(<span class="keywordsign">'</span>a <span class="keywordsign">-&gt;</span> string) <span class="keywordsign">-&gt;</span> (<span class="keywordsign">'</span>b <span class="keywordsign">-&gt;</span> string) <span class="keywordsign">-&gt;</span> [%t typ]</code>.
+<p>
+
+    <code class="code">_</code> parameters are ignored.<br>
+</div>
+
+<pre><span id="VALpoly_arrow_of_type_ext"><span class="keyword">val</span> poly_arrow_of_type_ext</span> : <code class="type">(Parsetree.core_type -> Parsetree.core_type) -><br>       Parsetree.type_extension -> Parsetree.core_type -> Parsetree.core_type</code></pre><div class="info ">
+Same as <a href="Ppx_deriving.html#VALpoly_arrow_of_type_decl"><code class="code"><span class="constructor">Ppx_deriving</span>.poly_arrow_of_type_decl</code></a> but for type extension.<br>
+</div>
+
+<pre><span id="VALcore_type_of_type_decl"><span class="keyword">val</span> core_type_of_type_decl</span> : <code class="type">Parsetree.type_declaration -> Parsetree.core_type</code></pre><div class="info ">
+<code class="code">core_type_of_type_decl type_</code> constructs type <code class="code">(<span class="keywordsign">'</span>a, <span class="keywordsign">'</span>b, ...) t</code> for
+    type declaration <code class="code"><span class="keyword">type</span> (<span class="keywordsign">'</span>a, <span class="keywordsign">'</span>b, ...) t = ...</code>.<br>
+</div>
+
+<pre><span id="VALcore_type_of_type_ext"><span class="keyword">val</span> core_type_of_type_ext</span> : <code class="type">Parsetree.type_extension -> Parsetree.core_type</code></pre><div class="info ">
+Same as <a href="Ppx_deriving.html#VALcore_type_of_type_decl"><code class="code"><span class="constructor">Ppx_deriving</span>.core_type_of_type_decl</code></a> but for type extension.<br>
+</div>
+
+<pre><span id="VALfold_exprs"><span class="keyword">val</span> fold_exprs</span> : <code class="type">?unit:Parsetree.expression -><br>       (Parsetree.expression -> Parsetree.expression -> Parsetree.expression) -><br>       Parsetree.expression list -> Parsetree.expression</code></pre><div class="info ">
+<code class="code">fold_exprs ~unit fn exprs</code> folds <code class="code">exprs</code> using head of <code class="code">exprs</code> as initial
+    accumulator value, or <code class="code">unit</code> if <code class="code">exprs = []</code>.
+<p>
+
+    See also <a href="Ppx_deriving.html#VALseq_reduce"><code class="code"><span class="constructor">Ppx_deriving</span>.seq_reduce</code></a> and <a href="Ppx_deriving.html#VALbinop_reduce"><code class="code"><span class="constructor">Ppx_deriving</span>.binop_reduce</code></a>.<br>
+</div>
+
+<pre><span id="VALseq_reduce"><span class="keyword">val</span> seq_reduce</span> : <code class="type">?sep:Parsetree.expression -><br>       Parsetree.expression -> Parsetree.expression -> Parsetree.expression</code></pre><div class="info ">
+When <code class="code">sep</code> is present:
+    <code class="code">seq_reduce</code> ≡ <code class="code"><span class="keyword">fun</span> x a b <span class="keywordsign">-&gt;</span> [%expr [%e a]; [%e x]; [%e b]]</code>.
+    When <code class="code">sep</code> is missing:
+    <code class="code">seq_reduce</code> ≡ <code class="code"><span class="keyword">fun</span> a b <span class="keywordsign">-&gt;</span> [%expr [%e a]; [%e b]]</code>.<br>
+</div>
+
+<pre><span id="VALbinop_reduce"><span class="keyword">val</span> binop_reduce</span> : <code class="type">Parsetree.expression -><br>       Parsetree.expression -> Parsetree.expression -> Parsetree.expression</code></pre><div class="info ">
+<code class="code">binop_reduce</code> ≡ <code class="code"><span class="keyword">fun</span> x a b <span class="keywordsign">-&gt;</span> [%expr [%e x] [%e a] [%e b]]</code>.<br>
+</div>
+
+<pre><span id="VALstrong_type_of_type"><span class="keyword">val</span> strong_type_of_type</span> : <code class="type">Parsetree.core_type -> Parsetree.core_type</code></pre><div class="info ">
+<code class="code">strong_type_of_type ty</code> transform a type ty to
+    <code class="code">freevars . ty</code>, giving a strong polymorphic type<br>
+</div>
+
+<pre><span id="VALmapper"><span class="keyword">val</span> mapper</span> : <code class="type">Ast_mapper.mapper</code></pre><div class="info ">
+The mapper for the currently loaded deriving plugins. It is useful for
+    recursively processing expression-valued attributes.<br>
+</div>
+<br>
+<h2 id="2_Miscellanea">Miscellanea</h2><br>
+
+<pre><span id="VALhash_variant"><span class="keyword">val</span> hash_variant</span> : <code class="type">string -> int</code></pre><div class="info ">
+<code class="code">hash_variant x</code> ≡ <code class="code"><span class="constructor">Btype</span>.hash_variant x</code>.<br>
+</div>
+</body></html>

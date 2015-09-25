@@ -1,0 +1,88 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<link rel="stylesheet" href="style.css" type="text/css">
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+<link rel="Start" href="index.html">
+<link rel="Up" href="Ppx_deriving.html">
+<link title="Index of types" rel=Appendix href="index_types.html">
+<link title="Index of values" rel=Appendix href="index_values.html">
+<link title="Index of modules" rel=Appendix href="index_modules.html">
+<link title="Ppx_deriving" rel="Chapter" href="Ppx_deriving.html">
+<link title="Ppx_deriving_runtime" rel="Chapter" href="Ppx_deriving_runtime.html"><title>API reference for ppx_deriving : Ppx_deriving.Arg</title>
+</head>
+<body>
+<div class="navbar">&nbsp;<a class="up" href="Ppx_deriving.html" title="Ppx_deriving">Up</a>
+&nbsp;</div>
+<h1>Module <a href="type_Ppx_deriving.Arg.html">Ppx_deriving.Arg</a></h1>
+
+<pre><span class="keyword">module</span> Arg: <code class="code"><span class="keyword">sig</span></code> <a href="Ppx_deriving.Arg.html">..</a> <code class="code"><span class="keyword">end</span></code></pre><div class="info module top">
+<a href="Ppx_deriving.Arg.html"><code class="code"><span class="constructor">Ppx_deriving</span>.<span class="constructor">Arg</span></code></a> contains convenience functions that extract constants from
+    AST fragments, to be used when parsing options or <code class="code">[@attributes]</code>
+    attached to types, fields or constructors.
+<p>
+
+    The <code class="code">~name</code> argument is used in error messages and should receive
+    the name of the deriving plugin, e.g. <code class="code"><span class="string">"show"</span></code>.<br>
+</div>
+<hr width="100%">
+
+<pre><span id="VALexpr"><span class="keyword">val</span> expr</span> : <code class="type">Parsetree.expression -> [> `Ok of Parsetree.expression ]</code></pre><div class="info ">
+<code class="code">expr</code> returns the input expression as-is.<br>
+</div>
+
+<pre><span id="VALbool"><span class="keyword">val</span> bool</span> : <code class="type">Parsetree.expression -> [ `Error of string | `Ok of bool ]</code></pre><div class="info ">
+<code class="code">bool expr</code> extracts a boolean constant from <code class="code">expr</code>, or returns
+      <code class="code"><span class="keywordsign">`</span><span class="constructor">Error</span> <span class="string">"boolean"</span></code> if <code class="code">expr</code> does not contain a boolean constant.<br>
+</div>
+
+<pre><span id="VALint"><span class="keyword">val</span> int</span> : <code class="type">Parsetree.expression -> [ `Error of string | `Ok of int ]</code></pre><div class="info ">
+<code class="code">int expr</code> extracts an integer constant from <code class="code">expr</code>, or returns
+      <code class="code"><span class="keywordsign">`</span><span class="constructor">Error</span> <span class="string">"integer"</span></code> if <code class="code">expr</code> does not contain an integer constant.<br>
+</div>
+
+<pre><span id="VALstring"><span class="keyword">val</span> string</span> : <code class="type">Parsetree.expression -> [ `Error of string | `Ok of string ]</code></pre><div class="info ">
+<code class="code">string expr</code> extracts a string constant from <code class="code">expr</code>, or returns
+      <code class="code"><span class="keywordsign">`</span><span class="constructor">Error</span> <span class="string">"string"</span></code> if <code class="code">expr</code> does not contain a string constant.<br>
+</div>
+
+<pre><span id="VALenum"><span class="keyword">val</span> enum</span> : <code class="type">string list -> Parsetree.expression -> [ `Error of string | `Ok of string ]</code></pre><div class="info ">
+<code class="code">enum values expr</code> extracts a polymorphic variant constant from <code class="code">expr</code>,
+      or returns <code class="code"><span class="keywordsign">`</span><span class="constructor">Error</span> <span class="string">"one of: `a, `b, ..."</span></code> if <code class="code">expr</code> does not contain
+      a variant included in <code class="code">values</code>.<br>
+</div>
+
+<pre><span id="VALget_attr"><span class="keyword">val</span> get_attr</span> : <code class="type">deriver:string -><br>       (Parsetree.expression -> [ `Error of string | `Ok of 'a ]) -><br>       Parsetree.attribute option -> 'a option</code></pre><div class="info ">
+<code class="code">get_attr ~deriver conv attr</code> extracts the expression from <code class="code">attr</code> and converts
+      it with <code class="code">conv</code>, raising <code class="code"><span class="constructor">Location</span>.<span class="constructor">Error</span></code> if <code class="code">attr</code> is not a structure with
+      a single expression or <code class="code">conv</code> fails; or returns <code class="code"><span class="constructor">None</span></code> if <code class="code">attr</code> is <code class="code"><span class="constructor">None</span></code>.
+      The name of the deriving plugin should be passed as <code class="code">deriver</code>; it is used
+      in error messages.
+<p>
+
+      Example usage:
+      <pre class="codepre"><code class="code"><span class="keyword">let</span>&nbsp;deriver&nbsp;=&nbsp;<span class="string">"index"</span><br>
+<span class="comment">(*&nbsp;...&nbsp;*)</span><br>
+&nbsp;&nbsp;<span class="keyword">let</span>&nbsp;kind&nbsp;=<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">match</span>&nbsp;<span class="constructor">Ppx_deriving</span>.attr&nbsp;~deriver&nbsp;<span class="string">"kind"</span>&nbsp;pcd_attributes&nbsp;|&gt;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="constructor">Ppx_deriving</span>.<span class="constructor">Arg</span>.(get_attr&nbsp;~deriver&nbsp;(enum&nbsp;[<span class="string">"flat"</span>;&nbsp;<span class="string">"nested"</span>]))&nbsp;<span class="keyword">with</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="keywordsign">|</span>&nbsp;<span class="constructor">Some</span>&nbsp;<span class="string">"flat"</span>&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="keywordsign">`</span>flat&nbsp;<span class="keywordsign">|</span>&nbsp;<span class="constructor">Some</span>&nbsp;<span class="string">"nested"</span>&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="keywordsign">`</span>nested&nbsp;<span class="keywordsign">|</span>&nbsp;<span class="constructor">None</span>&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="keywordsign">`</span>default<br>
+&nbsp;&nbsp;<span class="keyword">in</span>&nbsp;..<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code></pre><br>
+</div>
+
+<pre><span id="VALget_flag"><span class="keyword">val</span> get_flag</span> : <code class="type">deriver:string -> Parsetree.attribute option -> bool</code></pre><div class="info ">
+<code class="code">get_flag ~deriver attr</code> returns <code class="code"><span class="keyword">true</span></code> if <code class="code">attr</code> is an empty attribute
+      or <code class="code"><span class="keyword">false</span></code> if it is absent, raising <code class="code"><span class="constructor">Location</span>.<span class="constructor">Error</span></code> if <code class="code">attr</code> is not
+      a structure.
+      The name of the deriving plugin should be passed as <code class="code">deriver</code>; it is used
+      in error messages.<br>
+</div>
+
+<pre><span id="VALget_expr"><span class="keyword">val</span> get_expr</span> : <code class="type">deriver:string -><br>       (Parsetree.expression -> [ `Error of string | `Ok of 'a ]) -><br>       Parsetree.expression -> 'a</code></pre><div class="info ">
+<code class="code">get_expr ~deriver conv exp</code> converts expression <code class="code">exp</code> with <code class="code">conv</code>, raising
+      <code class="code"><span class="constructor">Location</span>.<span class="constructor">Error</span></code> if <code class="code">conv</code> fails.
+      The name of the deriving plugin should be passed as <code class="code">deriver</code>; it is used
+      in error messages.<br>
+</div>
+</body></html>
