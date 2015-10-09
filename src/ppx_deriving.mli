@@ -2,8 +2,6 @@
 
 open Parsetree
 
-module StringSet : Set.S with type elt = string
-
 (** {2 Registration} *)
 
 (** A type of deriving plugins.
@@ -124,6 +122,28 @@ let deriver = "index"
   val get_expr : deriver:string -> (expression -> [ `Ok of 'a | `Error of string ]) ->
                  expression -> 'a
 end
+
+(** {2 Hygiene} *)
+
+(** A [quoter] remembers a set of expressions. *)
+type quoter
+
+(** [quoter ()] creates an empty quoter. *)
+val create_quoter : unit -> quoter
+
+(** [quote quoter expr] records a pure expression [expr] within [quoter] and
+    returns an expression which has the same value as [expr] in the context
+    that [sanitize] provides. *)
+val quote : quoter:quoter -> expression -> expression
+
+(** [sanitize quoter expr] wraps [expr] in a way that ensures that the contents of
+    {!Ppx_deriving_runtime} and {!Pervasives}, as well as the identifiers in
+    expressions returned by [quote] are in scope, and returns the wrapped expression. *)
+val sanitize : ?quoter:quoter -> expression -> expression
+
+(** [with_quoter fn] ≡
+    [fun fn a -> let quoter = create_quoter () in sanitize ~quoter (fn quoter a)] *)
+val with_quoter : (quoter -> 'a -> expression) -> 'a -> expression
 
 (** {2 AST manipulation} *)
 
@@ -246,13 +266,11 @@ val binop_reduce : expression -> expression -> expression -> expression
     [freevars . ty], giving a strong polymorphic type *)
 val strong_type_of_type: core_type -> core_type
 
-(** [extract_typename_of_type_group ~allow_shadowing tys] will extract
-    the set of all types in a type group. Will raise an error in case
-    of type shadowing standard types, unless [~allow_shadowing] is set
-    to true. *)
-val extract_typename_of_type_group : string -> allow_shadowing:bool ->
-                                     type_declaration list -> StringSet.t
-
-val mapper : Ast_mapper.mapper
 (** The mapper for the currently loaded deriving plugins. It is useful for
     recursively processing expression-valued attributes. *)
+val mapper : Ast_mapper.mapper
+
+(** {2 Miscellanea} *)
+
+(** [hash_variant x] ≡ [Btype.hash_variant x]. *)
+val hash_variant : string -> int

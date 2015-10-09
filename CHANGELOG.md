@@ -1,11 +1,30 @@
 Changelog
 =========
 
+3.1
+---
+
+  * Show, eq, ord: hygienically invoke functions from referenced modules
+    (such as X.pp for X.t when deriving show) to coexist with modules
+    shadowing ones from standard library.
+  * Iter, map, fold: hygienically invoke List and Array functions.
+
+3.0
+---
+
+  * Implement hygiene: Ppx_deriving.{create_quoter,quote,sanitize,with_quoter}.
+  * Show, eq, ord: add support for `lazy_t`.
+  * Add support for `[@nobuiltin]` attribute.
+  * Add Ppx_deriving.hash_variant.
+  * Remove allow_std_type_shadowing option.
+  * Remove Ppx_deriving.extract_typename_of_type_group.
+
 2.1
 ---
 
   * Fix breakage occurring with 4.02.2 w.r.t record labels
   * Fix prefixed attribute names (`[@deriving.foo.attr]` and `[@foo.attr]`).
+  * Add allow_std_type_shadowing option for eq and show.
 
 2.0
 ---

@@ -16,6 +16,7 @@ type l  = int list   [@@deriving show]
 type a  = int array  [@@deriving show]
 type o  = int option [@@deriving show]
 type f  = int -> int [@@deriving show]
+type y  = int lazy_t [@@deriving show]
 let test_alias ctxt =
   assert_equal ~printer "1"       (show_a1 1);
   assert_equal ~printer "1l"      (show_a2 1l);
@@ -30,7 +31,11 @@ let test_alias ctxt =
   assert_equal ~printer "[1; 2; 3]" (show_l [1;2;3]);
   assert_equal ~printer "[|1; 2; 3|]" (show_a [|1;2;3|]);
   assert_equal ~printer "(Some 1)" (show_o (Some 1));
-  assert_equal ~printer "<fun>"   (show_f (fun x -> x))
+  assert_equal ~printer "<fun>"   (show_f (fun x -> x));
+  let y = lazy (1 + 1) in
+  assert_equal ~printer "<not evaluated>" (show_y y);
+  ignore (Lazy.force y);
+  assert_equal ~printer "2" (show_y y)
 
 type v = Foo | Bar of int * string | Baz of string [@@deriving show]
 let test_variant ctxt =
@@ -126,24 +131,23 @@ end
 
 
 type foo = F of int | B of int bar | C of float bar
-and 'a bar = { x : 'a ; r : foo } 
-  [@@deriving show]
+and 'a bar = { x : 'a ; r : foo }
+[@@deriving show]
 
-
-let test_mut_rec ctxt =
+let test_mrec ctxt =
   let e1 =  B { x = 12; r = F 16 } in
   assert_equal ~printer "(Test_deriving_show.B\n   { Test_deriving_show.x = 12; r = (Test_deriving_show.F 16) })" (show_foo e1)
 
 type es =
-  | ESBool of bool
-  | ESString of string
+  | ESBool of (bool [@nobuiltin])
+  | ESString of (string [@nobuiltin])
 and bool =
   | Bfoo of int * (int -> int)
 and string =
   | Sfoo of String.t * (int -> int)
-  [@@deriving show{ allow_std_type_shadowing }]
+[@@deriving show]
 
-let test_shadowed_std_type ctxt =
+let test_std_shadowing ctxt =
   let e1 = ESBool (Bfoo (1, (+) 1)) in
   let e2 = ESString (Sfoo ("lalala", (+) 3)) in
   assert_equal ~printer
@@ -153,20 +157,36 @@ let test_shadowed_std_type ctxt =
     "(Test_deriving_show.ESString Test_deriving_show.Sfoo (\"lalala\", <fun>))"
     (show_es e2)
 
+type poly_app = float poly_abs
+and 'a poly_abs = 'a
+[@@deriving show]
+
+let test_poly_app ctxt =
+  assert_equal ~printer "1." (show_poly_app 1.0)
+
+module List = struct
+  type 'a t = [`Cons of 'a | `Nil]
+  [@@deriving show]
+end
+type 'a std_clash = 'a List.t option
+[@@deriving show]
+
 let suite = "Test deriving(show)" >::: [
-    "test_alias"        >:: test_alias;
-    "test_variant"      >:: test_variant;
-    "test_variant_nest" >:: test_variant_nest;
-    "test_tuple"        >:: test_tuple;
-    "test_poly"         >:: test_poly;
-    "test_poly_inherit" >:: test_poly_inherit;
-    "test_record"       >:: test_record;
-    "test_abstr"        >:: test_abstr;
-    "test_custom"       >:: test_custom;
-    "test_parametric"   >:: test_parametric;
-    "test_alias_path"   >:: test_alias_path;
-    "test_polypr"       >:: test_polypr;
-    "test_placeholder"  >:: test_placeholder;
-    "test_mut_rec"      >:: test_mut_rec;
-    "test_shadowed_std_type" >:: test_shadowed_std_type;
+    "test_alias"         >:: test_alias;
+    "test_variant"       >:: test_variant;
+    "test_variant_nest"  >:: test_variant_nest;
+    "test_tuple"         >:: test_tuple;
+    "test_poly"          >:: test_poly;
+    "test_poly_inherit"  >:: test_poly_inherit;
+    "test_record"        >:: test_record;
+    "test_abstr"         >:: test_abstr;
+    "test_custom"        >:: test_custom;
+    "test_parametric"    >:: test_parametric;
+    "test_alias_path"    >:: test_alias_path;
+    "test_polypr"        >:: test_polypr;
+    "test_placeholder"   >:: test_placeholder;
+    "test_mrec"          >:: test_mrec;
+    "test_std_shadowing" >:: test_std_shadowing;
+    "test_poly_app"      >:: test_poly_app;
   ]
+

@@ -17,6 +17,7 @@ type r  = int ref    [@@deriving eq]
 type l  = int list   [@@deriving eq]
 type a  = int array  [@@deriving eq]
 type o  = int option [@@deriving eq]
+type y  = int lazy_t [@@deriving eq]
 
 let test_simple ctxt =
   assert_equal ~printer true  (equal_a1 1 1);
@@ -84,15 +85,15 @@ let test_mut_rec ctxt =
   assert_equal ~printer false (equal_e e2 e1)
 
 type es =
-  | ESBool of bool_
-  | ESString of string
-and bool_ =
+  | ESBool of (bool [@nobuiltin])
+  | ESString of (string [@nobuiltin])
+and bool =
   | Bfoo of int * ((int -> int) [@equal fun _ _ -> true])
 and string =
-  | Sfoo of String.t * ((int -> int) [@equal fun _ _ -> true])
-  [@@deriving eq{ allow_std_type_shadowing }]
+  | Sfoo of (String.t [@equal (=)]) * ((int -> int) [@equal fun _ _ -> true])
+[@@deriving eq]
 
-let test_shadowed_std_type ctxt =
+let test_std_shadowing ctxt =
   let e1 = ESBool (Bfoo (1, (+) 1)) in
   let e2 = ESString (Sfoo ("lalala", (+) 3)) in
   assert_equal ~printer false (equal_es e1 e2);
@@ -100,12 +101,28 @@ let test_shadowed_std_type ctxt =
   assert_equal ~printer true (equal_es e1 e1);
   assert_equal ~printer true (equal_es e2 e2)
 
+type poly_app = float poly_abs
+and 'a poly_abs = 'a
+[@@deriving eq]
+
+let test_poly_app ctxt =
+  assert_equal ~printer true (equal_poly_app 1.0 1.0);
+  assert_equal ~printer false (equal_poly_app 1.0 2.0)
+
+module List = struct
+  type 'a t = [`Cons of 'a | `Nil]
+  [@@deriving eq]
+end
+type 'a std_clash = 'a List.t option
+[@@deriving eq]
 
 let suite = "Test deriving(eq)" >::: [
-    "test_simple"       >:: test_simple;
-    "test_custom"       >:: test_custom;
-    "test_placeholder"  >:: test_placeholder;
-    "test_mrec"         >:: test_mrec;
-    "test_mut_rec"      >:: test_mut_rec;
+    "test_simple"        >:: test_simple;
+    "test_custom"        >:: test_custom;
+    "test_placeholder"   >:: test_placeholder;
+    "test_mrec"          >:: test_mrec;
+    "test_mut_rec"       >:: test_mut_rec;
+    "test_std_shadowing" >:: test_std_shadowing;
+    "test_poly_app"      >:: test_poly_app
   ]
 

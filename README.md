@@ -31,7 +31,7 @@ For example, if you are using ocamlbuild, add the following to `_tags` to use th
 
     <src/*>: package(ppx_deriving.std)
 
-If you are using another buildsystem, just make sure it passes `-package ppx_deriving_whatever` to ocamlfind.
+If you are using another buildsystem, just make sure it passes `-package ppx_deriving.whatever` to ocamlfind.
 
 Usage
 -----
@@ -116,7 +116,7 @@ It is expected that all _deriving_ plugins will follow the same conventions, thu
 
   * There may be additional attributes attached to the AST. In case of a plugin named `eq` and attributes named `compare` and `skip`, the plugin must recognize all of `compare`, `skip`, `eq.compare`, `eq.skip`, `deriving.eq.compare` and `deriving.eq.skip` annotations. However, if it detects that at least one namespaced (e.g. `eq.compare` or `deriving.eq.compare`) attribute is present, it must not look at any attributes located within a different namespace. As a result, different ppx rewriters can avoid interference even if the attribute names they use overlap.
 
-  * A typical plugin should handle tuples, records, normal and polymorphic variants; builtin types: `int`, `int32`, `int64`, `nativeint`, `float`, `bool`, `char`, `string`, `bytes`, `ref`, `list`, `array`, `option` and their `Mod.t` aliases; abstract types; and `_`. For builtin types, it should have customizable, sensible default behavior. For abstract types, it should expect to find the functions it would derive itself for that type.
+  * A typical plugin should handle tuples, records, normal and polymorphic variants; builtin types: `int`, `int32`, `int64`, `nativeint`, `float`, `bool`, `char`, `string`, `bytes`, `ref`, `list`, `array`, `option`, `lazy_t` and their `Mod.t` aliases; abstract types; and `_`. For builtin types, it should have customizable, sensible default behavior. This default behavior should not be used if a type has a `[@nobuiltin]` attribute attached to it, and the type should be treated as abstract. For abstract types, it should expect to find the functions it would derive itself for that type.
 
   * If a type is parametric, the generated functions accept an argument for every type variable before all other arguments.
 
@@ -322,6 +322,44 @@ As such, _deriving_:
 ### Using the API
 
 Complete API documentation is available [online](http://whitequark.github.io/ppx_deriving/Ppx_deriving.html).
+
+#### Hygiene
+
+A very important aspect of a syntax extension is **hygiene**. Consider a case where a _deriving_ plugin makes assumptions about the interface provided by the `List` module: it will normally work as expected, but not in case where someone shadows the `List` identifier! This happens quite often in the OCaml ecosystem, e.g. the Jane Street [Core] library encourages developers to use `open Core.Std`.
+
+Additionally, if your _deriving_ plugin inserts user-provided expressions into the generated code, a name you are using internally may accidentally collide with a user-defined name.
+
+With _deriving_, both of these problems are solved in three easy steps:
+
+  * Create a _quoter_:
+
+    ``` ocaml
+    let quoter = Ppx_deriving.create_quoter () in
+    ...
+    ```
+
+  * Pass the user-provided expressions, if any, through the quoter, such as
+    by using a helper function:
+
+    ```ocaml
+    let attr_custom_fn attrs =
+      Ppx_deriving.(attrs |> attr ~deriver "custom_fn" |> Arg.(get_attr ~deriver expr)
+                          |> quote ~quoter)
+    ```
+
+  * Wrap the generated code:
+
+    ```ocaml
+    let expr_of_typ typ =
+      let quoter = ...
+      and expr = ... in
+      sanitize ~quoter expr
+    ```
+
+    If the plugin does not accept user-provided expressions, `sanitize expr` could be used
+    instead.
+
+#### FAQ
 
 The following is a list of tips for developers trying to use the ppx interface:
 

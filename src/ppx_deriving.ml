@@ -5,8 +5,6 @@ open Parsetree
 open Ast_helper
 open Ast_convenience
 
-module StringSet = Set.Make(String)
-
 type deriver = {
   name : string ;
   core_type : (core_type -> expression) option;
@@ -113,6 +111,29 @@ module Arg = struct
     | `Ok v -> v
 end
 
+type quoter = {
+  mutable next_id : int;
+  mutable bindings : value_binding list;
+}
+
+let create_quoter () = { next_id = 0; bindings = [] }
+
+let quote ~quoter expr =
+  let name = "__" ^ string_of_int quoter.next_id in
+  quoter.bindings <- (Vb.mk (pvar name) [%expr fun () -> [%e expr]]) :: quoter.bindings;
+  quoter.next_id <- quoter.next_id + 1;
+  [%expr [%e evar name] ()]
+
+let sanitize ?(quoter=create_quoter ()) expr =
+  let body = [%expr (let open! Ppx_deriving_runtime in [%e expr]) [@ocaml.warning "-A"]] in
+  match quoter.bindings with
+  | [] -> body
+  | bindings -> Exp.let_ Nonrecursive bindings body
+
+let with_quoter fn a =
+  let quoter = create_quoter () in
+  sanitize ~quoter (fn quoter a)
+
 let expand_path ~path ident =
   String.concat "." (path @ [ident])
 
@@ -207,6 +228,11 @@ let free_vars_in_core_type typ =
     | { ptyp_desc = Ptyp_alias (x, name) } -> [name] @ free_in x
     | { ptyp_desc = Ptyp_poly (bound, x) } ->
       List.filter (fun y -> not (List.mem y bound)) (free_in x)
+    | { ptyp_desc = Ptyp_variant (rows, _, _) } ->
+      List.map (
+          function Rtag (_,_,_,ts) -> List.map free_in ts
+                 | Rinherit t -> [free_in t]
+        ) rows |> List.concat |> List.concat
     | _ -> assert false
   in
   let rec uniq acc lst =
@@ -275,39 +301,6 @@ let binop_reduce x a b =
 let strong_type_of_type ty =
   let free_vars = free_vars_in_core_type ty in
   Typ.force_poly @@ Typ.poly free_vars ty
-
-let predefined_types =
-  [
-    "unit";
-    "int";
-    "int32";
-    "int64";
-    "nativeint";
-    "float";
-    "bool";
-    "char";
-    "string";
-    "bytes"
-  ]
-
-let predefined_set =
-  List.fold_right StringSet.add predefined_types StringSet.empty
-
-let extract_typename_of_type_group deriver ~allow_shadowing type_list =
-  let add_name acc ty =
-    let typename = ty.ptype_name.txt in
-    let is_shadowing_predefined =
-      StringSet.mem typename predefined_set in
-    if is_shadowing_predefined && not allow_shadowing then
-      raise_errorf
-        ~loc:ty.ptype_loc
-        ("%s don't allow derivation of shadowed standard type %s. " ^^
-         "Use option 'allow_std_type_masking' to lift the restriction.")
-        deriver
-        typename
-    else
-      StringSet.add ty.ptype_name.txt acc in
-  List.fold_left add_name StringSet.empty type_list
 
 let derive path pstr_loc item attributes fn arg =
   let deriving = find_attr "deriving" attributes in
@@ -463,3 +456,13 @@ let mapper =
       module_nesting := module_from_input_name ();
       signature { mapper with structure; signature } items)
   }
+
+let hash_variant s =
+  let accu = ref 0 in
+  for i = 0 to String.length s - 1 do
+    accu := 223 * !accu + Char.code s.[i]
+  done;
+  (* reduce to 31 bits *)
+  accu := !accu land (1 lsl 31 - 1);
+  (* make it signed for 64 bits architectures *)
+  if !accu > 0x3FFFFFFF then !accu - (1 lsl 31) else !accu

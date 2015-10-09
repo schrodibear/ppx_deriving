@@ -17,6 +17,7 @@ type r  = int ref    [@@deriving ord]
 type l  = int list   [@@deriving ord]
 type a  = int array  [@@deriving ord]
 type o  = int option [@@deriving ord]
+type y  = int lazy_t [@@deriving ord]
 
 let test_simple ctxt =
   assert_equal ~printer  (1) (compare_a1 1 0);
@@ -85,13 +86,12 @@ let test_mrec ctxt =
   assert_equal ~printer (1)   (compare_mrec_variant_list [MrecFoo "foo"; MrecBar 2;]
                                                          [MrecFoo "foo"; MrecBar 1;])
 
-
 type e = Bool of be | Plus of e * e | IfE  of (be, e) if_e
 and be = True | False | And of be * be | IfB of (be, be) if_e
 and ('cond, 'a) if_e = 'cond * 'a * 'a
   [@@deriving ord]
 
-let test_mutualy_recursive ctxt =
+let test_mrec2 ctxt =
   let ce1 = Bool (IfB (True, False, True)) in
   let ce2 = Bool (IfB (True, False, False)) in
   assert_equal ~printer (0) (compare_e ce1 ce1);
@@ -105,9 +105,9 @@ and bool =
   | Bfoo of int * ((int -> int) [@compare fun _ _ -> 0])
 and string =
   | Sfoo of String.t * ((int -> int) [@compare fun _ _ -> 0])
-  [@@deriving ord{ allow_std_type_shadowing }]
+[@@deriving ord]
 
-let test_shadowed_std_type ctxt =
+let test_std_shadowing ctxt =
   let e1 = ESBool (Bfoo (1, (+) 1)) in
   let e2 = ESString (Sfoo ("lalala", (+) 3)) in
   assert_equal ~printer (-1) (compare_es e1 e2);
@@ -115,27 +115,40 @@ let test_shadowed_std_type ctxt =
   assert_equal ~printer 0 (compare_es e1 e1);
   assert_equal ~printer 0 (compare_es e2 e2)
 
+type poly_app = float poly_abs
+and 'a poly_abs = 'a
+[@@deriving ord]
+
+let test_poly_app ctxt =
+  assert_equal ~printer 0 (compare_poly_app 1.0 1.0);
+  assert_equal ~printer (-1) (compare_poly_app 1.0 2.0)
+
+module List = struct
+  type 'a t = [`Cons of 'a | `Nil]
+  [@@deriving ord]
+end
+type 'a std_clash = 'a List.t option
+[@@deriving ord]
+
 module Warnings = struct
   module W4 = struct
-    (* Module does not compile if warning 4 is triggered by the ord
-       deriver. *)
-
     [@@@ocaml.warning "@4"]
 
     type t =
       | A of int
       | B
-          [@@deriving ord]
+    [@@deriving ord]
   end
 end
 
 let suite = "Test deriving(ord)" >::: [
-    "test_simple"       >:: test_simple;
-    "test_variant"      >:: test_variant;
-    "test_complex"      >:: test_complex;
-    "test_custom"       >:: test_custom;
-    "test_placeholder"  >:: test_placeholder;
-    "test_mrec"         >:: test_mrec;
-    "test_mutualy_recursive" >:: test_mutualy_recursive;
-    "test_shadowed_std_type" >:: test_shadowed_std_type;
+    "test_simple"        >:: test_simple;
+    "test_variant"       >:: test_variant;
+    "test_complex"       >:: test_complex;
+    "test_custom"        >:: test_custom;
+    "test_placeholder"   >:: test_placeholder;
+    "test_mrec"          >:: test_mrec;
+    "test_mrec2"         >:: test_mrec2;
+    "test_std_shadowing" >:: test_std_shadowing;
+    "test_poly_app"      >:: test_poly_app;
   ]
