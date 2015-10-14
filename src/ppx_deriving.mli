@@ -119,8 +119,10 @@ let deriver = "index"
       [Location.Error] if [conv] fails.
       The name of the deriving plugin should be passed as [deriver]; it is used
       in error messages. *)
-  val get_expr : deriver:string -> (expression -> [ `Ok of 'a | `Error of string ]) ->
-                 expression -> 'a
+  val get_expr : deriver:string -> (expression -> [ `Ok of 'a | `Error of string ]) -> expression -> 'a
+
+  val get_ignores : deriver:string -> expression ->
+    < params : string list; constrs : (Longident.t * [ `Phantom | `Real ] list) list >
 end
 
 (** {2 Hygiene} *)
@@ -192,39 +194,40 @@ val fresh_var : string list -> string
 
 (** [fold_left_type_decl fn accum type_] performs a left fold over all type variable
     (i.e. not wildcard) parameters in [type_]. *)
-val fold_left_type_decl : ('a -> string -> 'a) -> 'a -> type_declaration -> 'a
+val fold_left_type_decl : ?ignore: string list -> ('a -> string -> 'a) -> 'a -> type_declaration -> 'a
 
 (** [fold_right_type_decl fn accum type_] performs a right fold over all type variable
     (i.e. not wildcard) parameters in [type_]. *)
-val fold_right_type_decl : (string -> 'a -> 'a) -> type_declaration -> 'a -> 'a
+val fold_right_type_decl : ?ignore: string list -> (string -> 'a -> 'a) -> type_declaration -> 'a -> 'a
 
 (** [fold_left_type_ext fn accum type_] performs a left fold over all type variable (i.e. not
     wildcard) parameters in [type_]. *)
-val fold_left_type_ext : ('a -> string -> 'a) -> 'a -> type_extension -> 'a
+val fold_left_type_ext : ?ignore: string list -> ('a -> string -> 'a) -> 'a -> type_extension -> 'a
 
 (** [fold_right_type_ext fn accum type_] performs a right fold over all type variable (i.e. not
     wildcard) parameters in [type_]. *)
-val fold_right_type_ext : (string -> 'a -> 'a) -> type_extension -> 'a -> 'a
+val fold_right_type_ext : ?ignore: string list -> (string -> 'a -> 'a) -> type_extension -> 'a -> 'a
 
 (** [poly_fun_of_type_decl type_ expr] wraps [expr] into [fun poly_N -> ...] for every
     type parameter ['N] present in [type_]. For example, if [type_] refers to
     [type ('a, 'b) map], [expr] will be wrapped into [fun poly_a poly_b -> [%e expr]].
 
     [_] parameters are ignored.  *)
-val poly_fun_of_type_decl : type_declaration -> expression -> expression
+val poly_fun_of_type_decl : ?ignore: string list -> ?sanitize: quoter option -> ?constrain: core_type ->
+  type_declaration -> expression -> expression
 
 (** Same as {!poly_fun_of_type_decl} but for type extension. *)
-val poly_fun_of_type_ext : type_extension -> expression -> expression
+val poly_fun_of_type_ext : ?ignore: string list -> type_extension -> expression -> expression
 
 (** [poly_apply_of_type_decl type_ expr] wraps [expr] into [expr poly_N] for every
     type parameter ['N] present in [type_]. For example, if [type_] refers to
     [type ('a, 'b) map], [expr] will be wrapped into [[%e expr] poly_a poly_b].
 
     [_] parameters are ignored. *)
-val poly_apply_of_type_decl : type_declaration -> expression -> expression
+val poly_apply_of_type_decl : ?ignore: string list -> type_declaration -> expression -> expression
 
 (** Same as {!poly_apply_of_type_decl} but for type extension. *)
-val poly_apply_of_type_ext : type_extension -> expression -> expression
+val poly_apply_of_type_ext : ?ignore: string list -> type_extension -> expression -> expression
 
 (** [poly_arrow_of_type_decl fn type_ typ] wraps [typ] in an arrow with [fn [%type: 'N]]
     as argument for every type parameter ['N] present in [type_]. For example, if
@@ -232,11 +235,11 @@ val poly_apply_of_type_ext : type_extension -> expression -> expression
     [typ] will be wrapped into [('a -> string) -> ('b -> string) -> [%t typ]].
 
     [_] parameters are ignored. *)
-val poly_arrow_of_type_decl : (core_type -> core_type) ->
+val poly_arrow_of_type_decl : ?ignore: string list -> (core_type -> core_type) ->
                               type_declaration -> core_type -> core_type
 
 (** Same as {!poly_arrow_of_type_decl} but for type extension. *)
-val poly_arrow_of_type_ext : (core_type -> core_type) ->
+val poly_arrow_of_type_ext : ?ignore: string list -> (core_type -> core_type) ->
                               type_extension -> core_type -> core_type
 
 (** [core_type_of_type_decl type_] constructs type [('a, 'b, ...) t] for
@@ -265,6 +268,8 @@ val binop_reduce : expression -> expression -> expression -> expression
 (** [strong_type_of_type ty] transform a type ty to
     [freevars . ty], giving a strong polymorphic type *)
 val strong_type_of_type: core_type -> core_type
+
+val abstract_type_vars : core_type -> core_type
 
 (** The mapper for the currently loaded deriving plugins. It is useful for
     recursively processing expression-valued attributes. *)

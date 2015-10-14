@@ -75,10 +75,6 @@ let str_of_type ~options ~path ({ ptype_loc = loc } as type_decl) =
   [Vb.mk (pvar (Ppx_deriving.mangle_type_decl (`Prefix deriver) type_decl))
          (Ppx_deriving.sanitize ~quoter creator)]
 
-let wrap_predef_option typ =
-  let predef_option = mknoloc (Ldot (Lident "*predef*", "option")) in
-  Typ.constr predef_option [typ]
-
 let sig_of_type ~options ~path ({ ptype_loc = loc } as type_decl) =
   parse_options options;
   let typ = Ppx_deriving.core_type_of_type_decl type_decl in
@@ -96,22 +92,22 @@ let sig_of_type ~options ~path ({ ptype_loc = loc } as type_decl) =
       List.fold_left (fun accum { pld_name = { txt = name; loc }; pld_type; pld_attributes } ->
         let attrs = pld_type.ptyp_attributes @ pld_attributes in
         match attr_default attrs with
-        | Some _ -> Typ.arrow (Optional name) (wrap_predef_option pld_type) accum
+        | Some _ -> Typ.arrow (Optional name) pld_type accum
         | None ->
         if attr_split attrs then
           match pld_type with
           | [%type: [%t? lhs] * [%t? rhs] list] when name.[String.length name - 1] = 's' ->
             let name' = String.sub name 0 (String.length name - 1) in
             Typ.arrow (Labelled name') lhs
-              (Typ.arrow (Optional name) (wrap_predef_option [%type: [%t rhs] list]) accum)
+              (Typ.arrow (Optional name) [%type: [%t rhs] list] accum)
           | _ -> raise_errorf ~loc "[@deriving.%s.split] annotation requires a type of form \
                                     'a * 'b list and label name ending with `s'" deriver
         else
           match pld_type with
           | [%type: [%t? _] list] ->
-            Typ.arrow (Optional name) (wrap_predef_option pld_type) accum
+            Typ.arrow (Optional name) pld_type accum
           | [%type: [%t? opt] option] ->
-            Typ.arrow (Optional name) (wrap_predef_option opt) accum
+            Typ.arrow (Optional name) opt accum
           | _ -> Typ.arrow (Labelled name) pld_type accum)
         typ labels
     | _ -> raise_errorf ~loc "%s can only be derived for record types" deriver

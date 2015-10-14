@@ -86,6 +86,39 @@ module Arg = struct
     | _ -> `Error (Printf.sprintf "one of: %s"
                     (String.concat ", " (List.map (fun s -> "`"^s) values)))
 
+  let ignore exp ct =
+    match exp.pexp_desc with
+    | Pexp_ident { txt = Lident "param"; _ } ->
+      (match ct.ptyp_desc with
+       | Ptyp_var v -> `Ok (`Param v)
+       | _ -> `Error "param : '<type_variable_name>")
+    | Pexp_ident { txt = Lident "constr"; _ } ->
+      (match ct.ptyp_desc with
+       | Ptyp_constr ({ txt = lid; _ }, cts) ->
+         `Ok (`Constr (lid, List.map (function { ptyp_desc = Ptyp_any; _ } -> `Phantom | _ -> `Real) cts))
+       | _ -> `Error "constr : <type_parameters> <type_constr>")
+    | _ -> `Error "param : '<type_variable_name> | constr : <type_parameters> <type_constr>"
+
+  let constraint_ parse expr =
+    match expr.pexp_desc with
+    | Pexp_constraint (e, ct) ->
+      (match parse e ct with
+       | `Ok _ as ok -> ok
+       | `Error e -> `Error ("(" ^ e ^")"))
+    | _ -> `Error "(<expr> : <type>)"
+
+  let rec list parse expr =
+    match expr.pexp_desc with
+    | Pexp_construct ({ txt = Lident "::"; _ }, Some { pexp_desc = Pexp_tuple [e; es]; _ }) ->
+      (match parse e with
+       | `Ok ok ->
+         (match list parse es with
+          | `Ok oks -> `Ok (ok :: oks)
+          | `Error _ as e -> e)
+       | `Error e -> `Error ("[ " ^ e ^ "; " ^ e ^ "; ... ]"))
+    | Pexp_construct ({ txt = Lident "[]"; _ }, None) -> `Ok []
+    | _ -> `Error "[ <expr>; ... ]"
+
   let get_attr ~deriver conv attr =
     match attr with
     | None -> None
@@ -109,6 +142,19 @@ module Arg = struct
     match conv expr with
     | `Error desc -> raise_errorf ~loc:expr.pexp_loc "%s: %s expected" deriver desc
     | `Ok v -> v
+
+  let get_ignores ~deriver expr =
+    match list (constraint_ ignore) expr with
+    | `Error desc -> raise_errorf ~loc:expr.pexp_loc "%s: %s expected" deriver desc
+    | `Ok v ->
+      List.fold_left
+        (fun (params, constrs) ->
+           function
+           | `Param v -> v :: params, constrs
+           | `Constr (lid, cts) -> params, (lid, cts) :: constrs)
+        ([], [])
+        v |> fun (params, constrs) ->
+      object method params = params method constrs = constrs end
 end
 
 type quoter = {
@@ -187,35 +233,41 @@ let attr_warning expr =
   let structure = {pstr_desc = Pstr_eval (expr, []); pstr_loc = loc} in
   {txt = "ocaml.warning"; loc}, PStr [structure]
 
-let fold_left_type_params fn accum params =
+let fold_left_type_params ?(ignore=[]) fn accum params =
   List.fold_left (fun accum (param, _) ->
       match param with
       | { ptyp_desc = Ptyp_any } -> accum
       | { ptyp_desc = Ptyp_var name } ->
-        fn accum name
+        if not (List.mem name ignore) then
+          fn accum name
+        else
+          accum
       | _ -> assert false)
     accum params
 
-let fold_left_type_decl fn accum { ptype_params } =
-  fold_left_type_params fn accum ptype_params
+let fold_left_type_decl ?ignore fn accum { ptype_params } =
+  fold_left_type_params ?ignore fn accum ptype_params
 
-let fold_left_type_ext fn accum { ptyext_params } =
-  fold_left_type_params fn accum ptyext_params
+let fold_left_type_ext ?ignore fn accum { ptyext_params } =
+  fold_left_type_params ?ignore fn accum ptyext_params
 
-let fold_right_type_params fn params accum =
+let fold_right_type_params ?(ignore=[]) fn params accum =
   List.fold_right (fun (param, _) accum ->
       match param with
       | { ptyp_desc = Ptyp_any } -> accum
       | { ptyp_desc = Ptyp_var name } ->
-        fn name accum
+        if not (List.mem name ignore) then
+          fn name accum
+        else
+          accum
       | _ -> assert false)
     params accum
 
-let fold_right_type_decl fn { ptype_params } accum =
-  fold_right_type_params fn ptype_params accum
+let fold_right_type_decl ?ignore fn { ptype_params } accum =
+  fold_right_type_params ?ignore fn ptype_params accum
 
-let fold_right_type_ext fn { ptyext_params } accum =
-  fold_right_type_params fn ptyext_params accum
+let fold_right_type_ext ?ignore fn { ptyext_params } accum =
+  fold_right_type_params ?ignore fn ptyext_params accum
 
 let free_vars_in_core_type typ =
   let rec free_in typ =
@@ -257,23 +309,43 @@ let fresh_var bound =
   in
   loop 0
 
-let poly_fun_of_type_decl type_decl expr =
-  fold_right_type_decl (fun name expr -> Exp.fun_ Nolabel None (pvar ("poly_"^name)) expr) type_decl expr
+let abstract_type_vars ty =
+  (object
+    inherit Ast_mapper_class.mapper as parent
+    method! typ ct =
+      match ct.ptyp_desc with
+      | Ptyp_var name ->
+        { ct with ptyp_desc = Ptyp_constr (mknoloc @@ Lident name, []) }
+      | _ -> parent#typ ct
+  end)#typ ty
 
-let poly_fun_of_type_ext type_ext expr =
-  fold_right_type_ext (fun name expr -> Exp.fun_ Nolabel None (pvar ("poly_"^name)) expr) type_ext expr
+let poly_fun_of_type_decl ?ignore ?sanitize:really_sanitize ?constrain type_decl expr =
+  (match really_sanitize with Some quoter -> sanitize ?quoter expr | None -> expr) |>
+  (match constrain with
+   | Some typ -> fun e -> Exp.constraint_ e (abstract_type_vars typ)
+   | None -> fun x -> x) |>
+  fold_right_type_decl
+    ?ignore
+    (fun name expr -> Exp.fun_ Nolabel None (pvar ("poly_" ^ name)) expr)
+    type_decl |>
+  (match constrain with
+   | Some _ -> fold_right_type_decl (fun name expr -> Exp.newtype name expr) type_decl
+   | None -> fun x -> x)
 
-let poly_apply_of_type_decl type_decl expr =
-  fold_left_type_decl (fun expr name -> Exp.apply expr [Nolabel, evar ("poly_"^name)]) expr type_decl
+let poly_fun_of_type_ext ?ignore type_ext expr =
+  fold_right_type_ext ?ignore (fun name expr -> Exp.fun_ Nolabel None (pvar ("poly_"^name)) expr) type_ext expr
 
-let poly_apply_of_type_ext type_ext expr =
-  fold_left_type_ext (fun expr name -> Exp.apply expr [Nolabel, evar ("poly_"^name)]) expr type_ext
+let poly_apply_of_type_decl ?ignore type_decl expr =
+  fold_left_type_decl ?ignore (fun expr name -> Exp.apply expr [Nolabel, evar ("poly_"^name)]) expr type_decl
 
-let poly_arrow_of_type_decl fn type_decl typ =
-  fold_right_type_decl (fun name typ -> Typ.arrow Nolabel (fn (Typ.var name)) typ) type_decl typ
+let poly_apply_of_type_ext ?ignore type_ext expr =
+  fold_left_type_ext ?ignore (fun expr name -> Exp.apply expr [Nolabel, evar ("poly_"^name)]) expr type_ext
 
-let poly_arrow_of_type_ext fn type_ext typ =
-  fold_right_type_ext (fun  name typ -> Typ.arrow Nolabel (fn (Typ.var name)) typ) type_ext typ
+let poly_arrow_of_type_decl ?ignore fn type_decl typ =
+  fold_right_type_decl ?ignore (fun name typ -> Typ.arrow Nolabel (fn (Typ.var name)) typ) type_decl typ
+
+let poly_arrow_of_type_ext ?ignore fn type_ext typ =
+  fold_right_type_ext ?ignore (fun  name typ -> Typ.arrow Nolabel (fn (Typ.var name)) typ) type_ext typ
 
 let core_type_of_type_decl { ptype_name = { txt = name }; ptype_params } =
   Typ.constr (mknoloc (Lident name)) (List.map fst ptype_params)
@@ -353,7 +425,7 @@ let derive_type_ext path typ_ext pstr_loc item fn =
 let module_from_input_name () =
   match !Location.input_name with
   | "//toplevel//" -> []
-  | filename -> [String.capitalize (Filename.(basename (chop_suffix filename ".ml")))]
+  | filename -> [String.capitalize_ascii (Filename.(basename (chop_suffix filename ".ml")))]
 
 let mapper =
   let module_nesting = ref [] in
