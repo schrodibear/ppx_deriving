@@ -319,8 +319,8 @@ let abstract_type_vars ty =
       | _ -> parent#typ ct
   end)#typ ty
 
-let poly_fun_of_type_decl ?ignore ?sanitize:really_sanitize ?constrain type_decl expr =
-  (match really_sanitize with Some quoter -> sanitize ?quoter expr | None -> expr) |>
+let poly_fun_of_type_decl ?sanitize_with ?constrain ?ignore type_decl expr =
+  (match sanitize_with with Some quoter -> sanitize ?quoter expr | None -> expr) |>
   (match constrain with
    | Some typ -> fun e -> Exp.constraint_ e (abstract_type_vars typ)
    | None -> fun x -> x) |>

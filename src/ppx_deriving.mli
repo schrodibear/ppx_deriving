@@ -121,6 +121,27 @@ let deriver = "index"
       in error messages. *)
   val get_expr : deriver:string -> (expression -> [ `Ok of 'a | `Error of string ]) -> expression -> 'a
 
+  (** [get_ignores ~deriver exp] converts [exp] of the form
+      [[(param : 'vi); (param : 'vj); ...; (constr : ('vj, _, ..., 'vk, _) ti); ...]] to an object with method
+      [params] returning the list [["vi"; "vj"; ...]] and method [constrs] returning the list
+      [[Lident ti, [`Real; `Phantom; ...; `Real; `Phantom]]] i.e. each non-wildcard parameter of [ti]
+      mapped to [`Real] and
+      each wildcard ([_]) parameter mapped to [`Phantom]. The name of the deriving plugin should be passed as
+      [deriver]; it is used in error messages.
+
+      This function is intended for derivers with support for GADTs. [params] can be used to specify the
+      (usually constructor-dependent) 'phantom' type parameters
+      that serve merly as tags and not types of some real data
+      (e.g.
+        {[type 'phantom typ = 'phantom Types.typ = Int : int t | Bool : bool t
+  [@@ deriving show { ignore = [(param : 'phantom)] }] ]} ). Those parameters should be handled with
+      locally abstract types, but otherwise they are usually ignored
+      (there is no need to handle any values of these types).
+      [constrs] can be used to specify the same 'phantom' parameters of GADT type constructors
+      used in the type definition (e.g.
+      {[ type some_typ = Some : _ typ -> some
+  [@@ deriving show { ignore = [(constr : _ typ)] }] ]}
+      for the [_ typ] type above). *)
   val get_ignores : deriver:string -> expression ->
     < params : string list; constrs : (Longident.t * [ `Phantom | `Real ] list) list >
 end
@@ -213,7 +234,7 @@ val fold_right_type_ext : ?ignore: string list -> (string -> 'a -> 'a) -> type_e
     [type ('a, 'b) map], [expr] will be wrapped into [fun poly_a poly_b -> [%e expr]].
 
     [_] parameters are ignored.  *)
-val poly_fun_of_type_decl : ?ignore: string list -> ?sanitize: quoter option -> ?constrain: core_type ->
+val poly_fun_of_type_decl : ?sanitize_with: quoter option -> ?constrain: core_type -> ?ignore: string list ->
   type_declaration -> expression -> expression
 
 (** Same as {!poly_fun_of_type_decl} but for type extension. *)

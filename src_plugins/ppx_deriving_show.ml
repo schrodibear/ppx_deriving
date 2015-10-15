@@ -266,10 +266,10 @@ let str_of_type ~options ~path ({ ptype_loc = loc } as type_decl) =
       (evar (Ppx_deriving.mangle_type_decl (`Prefix "pp") type_decl))
   in
   let stringprinter = [%expr fun x -> Format.asprintf "%a" [%e pp_poly_apply] x] in
-  let polymorphize ?sanitize ?constrain =
+  let polymorphize ?sanitize_with ?constrain =
     Ppx_deriving.poly_fun_of_type_decl
       ~ignore:opts#ignore#params
-      ?sanitize
+      ?sanitize_with
       ?constrain
       type_decl
   in
@@ -284,7 +284,7 @@ let str_of_type ~options ~path ({ ptype_loc = loc } as type_decl) =
   [Vb.mk
      (Pat.constraint_ pp_var strong_pp_type)
      (polymorphize
-        ~sanitize:(Some quoter)
+        ~sanitize_with:(Some quoter)
         ~constrain:(let typ = Ppx_deriving.core_type_of_type_decl type_decl in
                     [%type: Format.formatter -> [%t typ] -> Ppx_deriving_runtime.unit])
         prettyprinter);
