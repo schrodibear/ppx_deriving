@@ -85,7 +85,7 @@ let rec expr_of_typ
     | [%type: _] -> [%expr fun _ -> Format.pp_print_string fmt "_"]
     | { ptyp_desc = Ptyp_arrow _ } ->
       [%expr fun _ -> Format.pp_print_string fmt "<fun>"]
-    | { ptyp_desc = Ptyp_constr _ } ->
+    | { ptyp_desc = Ptyp_constr _ | Ptyp_class _ } ->
       let builtin = not (attr_nobuiltin typ.ptyp_attributes) in
       begin match builtin, typ with
       | true, [%type: unit]        -> [%expr fun () -> Format.pp_print_string fmt "()"]
@@ -123,7 +123,7 @@ let rec expr_of_typ
         [%expr fun x ->
           if Lazy.is_val x then [%e expr_of_typ typ] (Lazy.force x)
           else Format.pp_print_string fmt "<not evaluated>"]
-      | _, { ptyp_desc = Ptyp_constr ({ txt = lid }, args); ptyp_loc; _ } ->
+      | _, { ptyp_desc = Ptyp_constr ({ txt = lid }, args) | Ptyp_class ({ txt = lid }, args); ptyp_loc; _ } ->
         let args_pp =
           let arg_kinds =
             match List.find_all (fun (lid', _) -> lid = lid') opts#ignore#constrs with
