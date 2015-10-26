@@ -122,8 +122,9 @@ let deriver = "index"
   val get_expr : deriver:string -> (expression -> [ `Ok of 'a | `Error of string ]) -> expression -> 'a
 
   (** [get_ignores ~deriver exp] converts [exp] of the form
-      [[(param : 'vi); (param : 'vj); ...; (constr : ('vj, _, ..., 'vk, _) ti); ...]] to an object with method
-      [params] returning the list [["vi"; "vj"; ...]] and method [constrs] returning the list
+      [[(param : 'vi); (param : 'vj); ...; (constr : ('vj, _, ..., 'vk, _) ti); ...]] to a pair [(params, constrs)],
+      where
+      [params] is the list [["vi"; "vj"; ...]] and [constrs] is the list
       [[Lident ti, [`Real; `Phantom; ...; `Real; `Phantom]]] i.e. each non-wildcard parameter of [ti]
       mapped to [`Real] and
       each wildcard ([_]) parameter mapped to [`Phantom]. The name of the deriving plugin should be passed as
@@ -142,8 +143,7 @@ let deriver = "index"
       {[ type some_typ = Some : _ typ -> some
   [@@ deriving show { ignore = [(constr : _ typ)] }] ]}
       for the [_ typ] type above). *)
-  val get_ignores : deriver:string -> expression ->
-    < params : string list; constrs : (Longident.t * [ `Phantom | `Real ] list) list >
+  val get_ignores : deriver:string -> expression -> string list * (Longident.t * [ `Phantom | `Real ] list) list
 end
 
 (** {2 Hygiene} *)

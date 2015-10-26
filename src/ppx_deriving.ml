@@ -153,8 +153,7 @@ module Arg = struct
            | `Param v -> v :: params, constrs
            | `Constr (lid, cts) -> params, (lid, cts) :: constrs)
         ([], [])
-        v |> fun (params, constrs) ->
-      object method params = params method constrs = constrs end
+        v
 end
 
 type quoter = {

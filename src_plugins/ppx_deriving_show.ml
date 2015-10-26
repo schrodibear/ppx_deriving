@@ -8,15 +8,26 @@ open Ast_convenience
 let deriver = "show"
 let raise_errorf = Ppx_deriving.raise_errorf
 
+type options = {
+  ignore_params  : string list;
+  ignore_constrs : (Longident.t * [`Phantom | `Real] list) list;
+  short          : bool
+}
+
+let default_options =
+  { ignore_params = [];
+    ignore_constrs = [];
+    short = false }
+
 let parse_options options =
-  let short = ref false in
-  let ignore = ref (object method params = [] method constrs = [] end) in
-  options |> List.iter (fun (name, expr) ->
+  options |> List.fold_left (fun opts (name, expr) ->
     match name with
-    | "short" -> short := Ppx_deriving.Arg.(get_expr ~deriver bool) expr
-    | "ignore" -> ignore := Ppx_deriving.Arg.(get_ignores ~deriver) expr
-    | _ -> raise_errorf ~loc:expr.pexp_loc "%s does not support option %s" deriver name);
-  object method short = !short method ignore = !ignore end
+    | "short" -> { opts with short = Ppx_deriving.Arg.(get_expr ~deriver bool) expr }
+    | "ignore" ->
+      let ignore_params, ignore_constrs = Ppx_deriving.Arg.(get_ignores ~deriver) expr in
+      { opts with ignore_params; ignore_constrs }
+    | _ -> raise_errorf ~loc:expr.pexp_loc "%s does not support option %s" deriver name)
+    default_options
 
 let attr_nobuiltin attrs =
   Ppx_deriving.(attrs |> attr ~deriver "nobuiltin" |> Arg.get_flag ~deriver)
@@ -36,7 +47,7 @@ let pp_type_of_decl ~options ~path type_decl =
   let opts = parse_options options in
   let typ = Ppx_deriving.core_type_of_type_decl type_decl in
   Ppx_deriving.poly_arrow_of_type_decl
-    ~ignore:opts#ignore#params
+    ~ignore:opts.ignore_params
     (fun var -> [%type: Format.formatter -> [%t var] -> Ppx_deriving_runtime.unit])
     type_decl
     [%type: Format.formatter -> [%t typ] -> Ppx_deriving_runtime.unit]
@@ -45,7 +56,7 @@ let show_type_of_decl ~options ~path type_decl =
   let opts = parse_options options in
   let typ = Ppx_deriving.core_type_of_type_decl type_decl in
   Ppx_deriving.poly_arrow_of_type_decl
-    ~ignore:opts#ignore#params
+    ~ignore:opts.ignore_params
     (fun var -> [%type: Format.formatter -> [%t var] -> Ppx_deriving_runtime.unit])
     type_decl
     [%type: [%t typ] -> Ppx_deriving_runtime.string]
@@ -57,10 +68,7 @@ let sig_of_type ~options ~path type_decl =
    Sig.value (Val.mk (mknoloc (Ppx_deriving.mangle_type_decl (`Prefix "show") type_decl))
               (show_type_of_decl ~options ~path type_decl))]
 
-let rec expr_of_typ
-    ?(opts=object method ignore = (object method params = [] method constrs = [] end) method short = false end)
-    quoter
-    typ =
+let rec expr_of_typ ?(opts=default_options) quoter typ =
   let expr_of_typ = expr_of_typ ~opts quoter in
   match attr_printer typ.ptyp_attributes with
   | Some printer ->
@@ -126,7 +134,7 @@ let rec expr_of_typ
       | _, { ptyp_desc = Ptyp_constr ({ txt = lid }, args) | Ptyp_class ({ txt = lid }, args); ptyp_loc; _ } ->
         let args_pp =
           let arg_kinds =
-            match List.find_all (fun (lid', _) -> lid = lid') opts#ignore#constrs with
+            match List.find_all (fun (lid', _) -> lid = lid') opts.ignore_constrs with
             | [_, kinds] -> kinds
             | [] -> List.map (fun _ -> `Real) args
             | _ :: _ :: _ ->
@@ -205,7 +213,7 @@ let str_of_type ~options ~path ({ ptype_loc = loc } as type_decl) =
     let pp_record labels =
       let fields =
         labels |> List.mapi (fun i { pld_name = { txt = name }; pld_type; pld_attributes } ->
-          let field_name = if i = 0 && not opts#short then Ppx_deriving.expand_path ~path name else name in
+          let field_name = if i = 0 && not opts.short then Ppx_deriving.expand_path ~path name else name in
           let pld_type = {pld_type with ptyp_attributes=pld_attributes@pld_type.ptyp_attributes} in
           [%expr Format.pp_print_string fmt [%e str (field_name ^ " = ")];
           [%e expr_of_typ ~opts quoter pld_type] [%e Exp.field (evar "x") (mknoloc (Lident name))]])
@@ -224,8 +232,8 @@ let str_of_type ~options ~path ({ ptype_loc = loc } as type_decl) =
         constrs |>
         List.map
           (fun ({ pcd_name = { txt = name' }; _ } as cd) ->
-             let constr_name = if not opts#short then Ppx_deriving.expand_path ~path name' else name' in
-             match cd.pcd_args with
+            let constr_name = if not opts.short then Ppx_deriving.expand_path ~path name' else name' in
+            match cd.pcd_args with
             | Pcstr_tuple argts ->
               let args = List.mapi (fun i typ -> app (expr_of_typ ~opts quoter typ) [evar (argn i)]) argts in
               let result =
@@ -261,14 +269,14 @@ let str_of_type ~options ~path ({ ptype_loc = loc } as type_decl) =
   in
   let pp_poly_apply =
     Ppx_deriving.poly_apply_of_type_decl
-      ~ignore:opts#ignore#params
+      ~ignore:opts.ignore_params
       type_decl
       (evar (Ppx_deriving.mangle_type_decl (`Prefix "pp") type_decl))
   in
   let stringprinter = [%expr fun x -> Format.asprintf "%a" [%e pp_poly_apply] x] in
   let polymorphize ?sanitize_with ?constrain =
     Ppx_deriving.poly_fun_of_type_decl
-      ~ignore:opts#ignore#params
+      ~ignore:opts.ignore_params
       ?sanitize_with
       ?constrain
       type_decl
