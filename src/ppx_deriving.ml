@@ -394,6 +394,17 @@ let derive path pstr_loc item attributes fn arg =
             { pexp_desc = Pexp_record (options, None) }]) } ->
           name, options |> List.map (fun ({ txt }, expr) ->
             String.concat "." (Longident.flatten txt), expr)
+        | { pexp_desc = Pexp_apply ({ pexp_desc = Pexp_ident name }, args) }
+          when List.for_all (function Labelled _, _ -> true | _ -> false) args ->
+          name, args |>
+            List.map
+              (function
+                | Labelled lab, expr ->
+                  lab,
+                  (match expr with
+                   | { pexp_desc = Pexp_ident { txt = Lident id } } when id = lab -> [%expr true]
+                   | _ -> expr)
+                | _ -> assert false)
         | { pexp_loc } ->
           raise_errorf ~loc:pexp_loc "Unrecognized [@@deriving] option syntax"
       in
