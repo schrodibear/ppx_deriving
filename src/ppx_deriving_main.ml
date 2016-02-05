@@ -16,7 +16,7 @@ let get_plugins () =
   | Some { pexp_desc = Pexp_tuple exprs } ->
     exprs |> List.map (fun expr ->
       match expr with
-      | { pexp_desc = Pexp_constant (Const_string (file, None)) } -> file
+      | { pexp_desc = Pexp_constant (Pconst_string (file, None)) } -> file
       | _ -> assert false)
   | Some _ -> assert false
   | None -> []
@@ -27,7 +27,7 @@ let add_plugins plugins =
   List.iter dynlink plugins;
   let loaded  = loaded @ plugins in
   Ast_mapper.set_cookie "ppx_deriving"
-    (Exp.tuple (List.map (fun file -> Exp.constant (Const_string (file, None))) loaded))
+    (Exp.tuple (List.map (fun file -> Exp.constant (Pconst_string (file, None))) loaded))
 
 let mapper argv =
   get_plugins () |> List.iter dynlink;
@@ -38,7 +38,7 @@ let mapper argv =
       elems |>
         List.map (fun elem ->
           match elem with
-          | { pexp_desc = Pexp_constant (Const_string (file, None))} -> file
+          | { pexp_desc = Pexp_constant (Pconst_string (file, None))} -> file
           | _ -> assert false) |>
         add_plugins;
         mapper.Ast_mapper.structure mapper rest

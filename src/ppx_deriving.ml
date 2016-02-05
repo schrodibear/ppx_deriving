@@ -65,7 +65,8 @@ module Arg = struct
 
   let int expr =
     match expr with
-    | { pexp_desc = Pexp_constant (Const_int n) } -> `Ok n
+    | { pexp_desc = Pexp_constant (Pconst_integer (n, _)) } ->
+      (try `Ok (int_of_string n) with Failure _ -> `Error "integer")
     | _ -> `Error "integer"
 
   let bool expr =
@@ -76,7 +77,7 @@ module Arg = struct
 
   let string expr =
     match expr with
-    | { pexp_desc = Pexp_constant (Const_string (n, None)) } -> `Ok n
+    | { pexp_desc = Pexp_constant (Pconst_string (n, None)) } -> `Ok n
     | _ -> `Error "string"
 
   let enum values expr =
