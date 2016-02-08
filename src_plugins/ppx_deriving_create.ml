@@ -70,6 +70,7 @@ let str_of_type ~options ~path ({ ptype_loc = loc } as type_decl) =
             Exp.fun_ (Optional name) None (pvar name) accum
           | _ -> Exp.fun_ (Labelled name) None (pvar name) accum)
           fn labels
+    | _ when Ast_mapper.tool_name () = "ocamldep" -> Exp.fun_ Nolabel None (punit ()) (Exp.assert_ (constr "false" []))
     | _ -> raise_errorf ~loc "%s can be derived only for record types" deriver
   in
   [Vb.mk (pvar (Ppx_deriving.mangle_type_decl (`Prefix deriver) type_decl))
@@ -110,6 +111,7 @@ let sig_of_type ~options ~path ({ ptype_loc = loc } as type_decl) =
             Typ.arrow (Optional name) opt accum
           | _ -> Typ.arrow (Labelled name) pld_type accum)
         typ labels
+    | _ when Ast_mapper.tool_name () = "ocamldep" -> Typ.arrow Nolabel (tconstr "unit" []) typ
     | _ -> raise_errorf ~loc "%s can only be derived for record types" deriver
   in
   [Sig.value (Val.mk (mknoloc (Ppx_deriving.mangle_type_decl (`Prefix deriver) type_decl)) typ)]
