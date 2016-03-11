@@ -374,18 +374,20 @@ let strong_type_of_type ty =
   let free_vars = free_vars_in_core_type ty in
   Typ.force_poly @@ Typ.poly free_vars ty
 
-let derive path pstr_loc item attributes fn arg =
-  let deriving = find_attr "deriving" attributes in
-  let deriver_exprs, loc =
-    match deriving with
-    | Some (PStr [{ pstr_desc = Pstr_eval (
-                    { pexp_desc = Pexp_tuple exprs }, []); pstr_loc }]) ->
-      exprs, pstr_loc
-    | Some (PStr [{ pstr_desc = Pstr_eval (
-                    { pexp_desc = (Pexp_ident _ | Pexp_apply _) } as expr, []); pstr_loc }]) ->
-      [expr], pstr_loc
-    | _ -> raise_errorf ~loc:pstr_loc "Unrecognized [@@deriving] annotation syntax"
-  in
+module H_string = Hashtbl.Make (struct type t = string let equal = String.equal let hash = Hashtbl.hash end)
+
+let parse_payload ~loc =
+  function
+  | Some (PStr [{ pstr_desc = Pstr_eval (
+                  { pexp_desc = Pexp_tuple exprs }, []); pstr_loc }]) ->
+    exprs, pstr_loc
+  | Some (PStr [{ pstr_desc = Pstr_eval (
+                  { pexp_desc = (Pexp_ident _ | Pexp_apply _) } as expr, []); pstr_loc }]) ->
+    [expr], pstr_loc
+  | _ -> raise_errorf ~loc "Unrecognized [@@deriving] annotation syntax"
+
+let derive path pstr_loc item default_option_env attributes fn arg =
+  let deriver_exprs, loc = parse_payload ~loc:pstr_loc @@ find_attr "deriving" attributes in
   List.fold_left (fun items deriver_expr ->
       let name, options =
         match deriver_expr with
@@ -417,6 +419,16 @@ let derive path pstr_loc item attributes fn arg =
           Arg.(get_expr ~deriver:name bool) expr,
           List.remove_assoc "optional" options
       in
+      let options =
+        try
+          let h = H_string.find default_option_env name in
+          H_string.fold
+            (fun name (_, v) acc -> if not (List.mem_assoc name acc) then (name, v) :: acc else acc)
+            h
+            options
+        with
+        | Not_found -> options
+      in
       match lookup name with
       | Some deriver ->
         items @ ((fn deriver) ~options ~path:(!path) arg)
@@ -425,25 +437,71 @@ let derive path pstr_loc item attributes fn arg =
         else raise_errorf ~loc "Cannot locate deriver %s" name)
     [item] deriver_exprs
 
-let derive_type_decl path typ_decls pstr_loc item fn =
+let derive_type_decl path default_option_env typ_decls pstr_loc item fn =
   let attributes = List.concat (List.map (fun { ptype_attributes = attrs } -> attrs) typ_decls) in
-  derive path pstr_loc item attributes fn typ_decls
+  derive path pstr_loc item default_option_env attributes fn typ_decls
 
-let derive_type_ext path typ_ext pstr_loc item fn =
+let derive_type_ext path default_option_env typ_ext pstr_loc item fn =
   let attributes = typ_ext.ptyext_attributes in
-  derive path pstr_loc item attributes fn typ_ext
+  derive path pstr_loc item default_option_env attributes fn typ_ext
 
 let module_from_input_name () =
   match !Location.input_name with
   | "//toplevel//" -> []
   | filename -> [String.capitalize_ascii (Filename.(basename (chop_suffix filename ".ml")))]
 
+let handle_default_options path pstr_loc env =
+  function
+  | { txt = "deriving"; _ }, payload ->
+    let deriver_exprs, _ = parse_payload ~loc:pstr_loc (Some payload) in
+    List.iter
+      (fun deriver_expr ->
+         let derivers, options =
+           match deriver_expr with
+           | { pexp_desc = Pexp_ident name } -> [name], []
+           | { pexp_desc = Pexp_apply ({ pexp_desc = Pexp_ident _ | Pexp_tuple _ as derivers }, args) }
+             when List.for_all (function Optional _, _ -> true | _ -> false) args ->
+             (match derivers with
+              | Pexp_ident name -> [name]
+              | Pexp_tuple names ->
+                List.map
+                  (function
+                   | { pexp_desc = Pexp_ident name } -> name
+                   | { pexp_loc = loc } -> raise_errorf ~loc "Unrecognized deriver syntax")
+                  names
+              | _ -> assert false),
+             args |>
+             List.map
+               (function
+                 | Optional lab, expr ->
+                   lab,
+                   (match expr with
+                    | { pexp_desc = Pexp_ident { txt = Lident id } } when id = lab -> [%expr true]
+                    | _ -> expr)
+                 | _ -> assert false)
+           | { pexp_loc } ->
+             raise_errorf ~loc:pexp_loc "Unrecognized [@@deriving] option syntax"
+         in
+         let derivers = List.map (fun { txt } -> String.concat "_" @@ Longident.flatten txt) derivers in
+         List.iter
+           (fun deriver ->
+              let h = H_string.(try find env deriver with Not_found -> let h = create 4 in add env deriver h; h) in
+              List.iter (fun (name, value) -> H_string.add h name (path, value)) options)
+           derivers)
+      deriver_exprs
+  | _ -> ()
+
 let mapper =
   let module_nesting = ref [] in
+  let default_option_env  = H_string.create 5 in
   let with_module name f =
     let old_nesting = !module_nesting in
     module_nesting := !module_nesting @ [name];
     let result = f () in
+    H_string.iter
+      (fun _ opts ->
+         H_string.filter_map_inplace (fun _ (path, _ as v) -> if path <> !module_nesting then Some v else None) opts)
+      default_option_env;
     module_nesting := old_nesting;
     result
   in
@@ -472,16 +530,19 @@ let mapper =
   in
   let structure mapper items =
     match items with
+    | { pstr_desc = Pstr_attribute attr; pstr_loc } as item :: rest ->
+      handle_default_options !module_nesting pstr_loc default_option_env attr;
+      item :: mapper.Ast_mapper.structure mapper rest
     | { pstr_desc = Pstr_type (_, typ_decls); pstr_loc } as item :: rest when
         List.exists (fun ty -> has_attr "deriving" ty.ptype_attributes) typ_decls ->
       Ast_helper.with_default_loc pstr_loc (fun () ->
-        derive_type_decl module_nesting typ_decls pstr_loc item
+        derive_type_decl module_nesting default_option_env typ_decls pstr_loc item
           (fun deriver -> deriver.type_decl_str)
 	@ mapper.Ast_mapper.structure mapper rest)
     | { pstr_desc = Pstr_typext typ_ext; pstr_loc } as item :: rest when
           has_attr "deriving" typ_ext.ptyext_attributes ->
       Ast_helper.with_default_loc pstr_loc (fun () ->
-        derive_type_ext module_nesting typ_ext pstr_loc item
+        derive_type_ext module_nesting default_option_env typ_ext pstr_loc item
           (fun deriver -> deriver.type_ext_str)
 	@ mapper.Ast_mapper.structure mapper rest)
     | { pstr_desc = Pstr_module ({ pmb_name = { txt = name } } as mb) } as item :: rest ->
@@ -502,16 +563,19 @@ let mapper =
   in
   let signature mapper items =
     match items with
+    | { psig_desc = Psig_attribute attr; psig_loc } as item :: rest ->
+      handle_default_options !module_nesting psig_loc default_option_env attr;
+      item :: mapper.Ast_mapper.signature mapper rest
     | { psig_desc = Psig_type (_, typ_decls); psig_loc } as item :: rest when
         List.exists (fun ty -> has_attr "deriving" ty.ptype_attributes) typ_decls ->
       Ast_helper.with_default_loc psig_loc (fun () ->
-        derive_type_decl module_nesting typ_decls psig_loc item
+        derive_type_decl module_nesting default_option_env typ_decls psig_loc item
           (fun deriver -> deriver.type_decl_sig)
 	@ mapper.Ast_mapper.signature mapper rest)
     | { psig_desc = Psig_typext typ_ext; psig_loc } as item :: rest when
         has_attr "deriving" typ_ext.ptyext_attributes ->
       Ast_helper.with_default_loc psig_loc (fun () ->
-        derive_type_ext module_nesting typ_ext psig_loc item
+        derive_type_ext module_nesting default_option_env typ_ext psig_loc item
           (fun deriver -> deriver.type_ext_sig)
 	@ mapper.Ast_mapper.signature mapper rest)
     | { psig_desc = Psig_module ({ pmd_name = { txt = name } } as md) } as item :: rest ->
